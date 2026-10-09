@@ -1,0 +1,27 @@
+{
+  "name": "flakehunter-airflow",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "remoteEnv": {
+    "AIRFLOW_HOME": "${containerWorkspaceFolder}/.airflow",
+    "AIRFLOW__CORE__DAGS_FOLDER": "${containerWorkspaceFolder}/dags",
+    "AIRFLOW__CORE__LOAD_EXAMPLES": "False",
+    "PATH": "${containerWorkspaceFolder}/.venv/bin:${containerEnv:PATH}"
+  },
+  "postCreateCommand": "bash -c 'set -e; curl -LsSf https://astral.sh/uv/install.sh | sh; export PATH=\"$HOME/.local/bin:$PATH\"; AIRFLOW_VERSION=3.3.2; PYTHON_VERSION=$(python -c \"import sys; print(f\\\"{sys.version_info.major}.{sys.version_info.minor}\\\")\"); uv venv .venv; uv pip install --python .venv/bin/python \"apache-airflow[http,github]==${AIRFLOW_VERSION}\" --constraint \"https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt\"'",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Airflow UI",
+      "onAutoForward": "notify",
+      "visibility": "private"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "charliermarsh.ruff"],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python"
+      }
+    }
+  }
+}

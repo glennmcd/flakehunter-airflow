@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Airflow local state (see docs/plans/airflow-plan.md)
+.airflow/
