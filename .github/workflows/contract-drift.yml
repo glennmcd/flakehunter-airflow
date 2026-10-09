@@ -1,0 +1,38 @@
+name: Contract drift
+
+# Compares contract/openapi.json with FlakeHunter's latest spec. Scheduled, not a PR gate:
+# unreleased FlakeHunter changes would otherwise block unrelated work here.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - id: check
+        run: |
+          set +e
+          python scripts/check_drift.py | tee drift.txt
+          echo "code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+      - name: Open or update the reminder issue
+        if: steps.check.outputs.code == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="FlakeHunter contract drift"
+          body="$(printf 'The pinned spec differs from FlakeHunter main. Review the diff, then re-pin on purpose (see `contract/PIN.md`).\n\n```diff\n%s\n```\n\nRun: %s/%s/actions/runs/%s' "$(head -c 50000 drift.txt)" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
+          number="$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')"
+          if [ -n "$number" ]; then gh issue comment "$number" --body "$body"; else gh issue create --title "$title" --body "$body"; fi
+      - name: Fail the run when drifted or the spec could not be fetched
+        if: steps.check.outputs.code != '0'
+        run: exit 1
