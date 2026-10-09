@@ -7,7 +7,7 @@
     "AIRFLOW__CORE__LOAD_EXAMPLES": "False",
     "PATH": "${containerWorkspaceFolder}/.venv/bin:${containerEnv:PATH}"
   },
-  "postCreateCommand": "bash -c 'set -e; curl -LsSf https://astral.sh/uv/install.sh | sh; export PATH=\"$HOME/.local/bin:$PATH\"; AIRFLOW_VERSION=3.3.2; PYTHON_VERSION=$(python -c \"import sys; print(f\\\"{sys.version_info.major}.{sys.version_info.minor}\\\")\"); uv venv .venv; uv pip install --python .venv/bin/python \"apache-airflow[http,github]==${AIRFLOW_VERSION}\" --constraint \"https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt\"'",
+  "postCreateCommand": "bash -c 'set -e; curl -LsSf https://astral.sh/uv/install.sh | sh; export PATH=\"$HOME/.local/bin:$PATH\"; AIRFLOW_VERSION=3.3.2; PYTHON_VERSION=$(python -c \"import sys; print(f\\\"{sys.version_info.major}.{sys.version_info.minor}\\\")\"); uv venv .venv; uv pip install --python .venv/bin/python \"apache-airflow[http,github]==${AIRFLOW_VERSION}\" -e . pytest respx ruff --constraint \"https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt\"'",
   "postStartCommand": "bash -c 'W=$(pwd); export AIRFLOW_HOME=$W/.airflow AIRFLOW__CORE__DAGS_FOLDER=$W/dags AIRFLOW__CORE__LOAD_EXAMPLES=False; mkdir -p $AIRFLOW_HOME $AIRFLOW__CORE__DAGS_FOLDER; pgrep -f \"airflow standalone\" >/dev/null || nohup $W/.venv/bin/airflow standalone > $AIRFLOW_HOME/standalone.log 2>&1 &'",
   "forwardPorts": [8080],
   "portsAttributes": {
