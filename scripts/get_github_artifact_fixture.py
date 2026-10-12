@@ -1,4 +1,3 @@
-
 import json
 import os
 from pathlib import Path
@@ -18,13 +17,14 @@ def download_github_artifact_zip() -> int:
         "X-GitHub-Api-Version": "2022-11-28",
     }
     print(headers)
-    with httpx.Client(headers=headers,timeout=20, follow_redirects=True) as client:
+    with httpx.Client(headers=headers, timeout=20, follow_redirects=True) as client:
         response = client.get(url)
         response.raise_for_status()
-       
+
         fixture_path = FIXTURES_DIR / "github_artifact.zip"
         fixture_path.write_bytes(response.content)
     return 0
+
 
 def download_github_artifact():
     url = "https://api.github.com/repos/glennmcd/flakehunter-test-fixture/actions/runs/37382066142/artifacts"
@@ -35,17 +35,19 @@ def download_github_artifact():
         "X-GitHub-Api-Version": "2022-11-28",
     }
     print(headers)
-    with httpx.Client(headers=headers,timeout=10, follow_redirects=True) as client:
+    with httpx.Client(headers=headers, timeout=10, follow_redirects=True) as client:
         response = client.get(url)
         response.raise_for_status()
         data = response.json()
         fixture_path = FIXTURES_DIR / "artifact_spec.json"
         fixture_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
+
 def main() -> int:
     download_github_artifact_zip()
     download_github_artifact()
     return 0
 
+
 if __name__ == "__main__":
-    raise SystemExit(main())    
+    raise SystemExit(main())

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 # [START example_dynamic_task_mapping]
@@ -13,7 +12,6 @@ with DAG(
     tags=["example"],
 ):
 
-    
     @task
     def discover_runs(values):
         return values
@@ -21,7 +19,7 @@ with DAG(
     @task
     def upload_run(x: int):
         return x
-    
+
     @task
     def summarize(values):
         total = sum(values)

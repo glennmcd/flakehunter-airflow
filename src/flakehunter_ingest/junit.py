@@ -9,8 +9,9 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
 def get_combined_artifact(fixture_paths: list[Path]) -> Path:
-    
+
     combined_root = ET.Element("testsuites")
     combined_tree = ET.ElementTree(combined_root)
     failures_attribute = 0
@@ -23,7 +24,7 @@ def get_combined_artifact(fixture_paths: list[Path]) -> Path:
             root = tree.getroot()
             failures_attribute += int(root.attrib.get("failures", 0))
             num_tests_attribute += int(root.attrib.get("tests", 0))
-            errors_attribute += int(root.attrib.get("errors", 0))   
+            errors_attribute += int(root.attrib.get("errors", 0))
             amount_of_time_attribute += float(root.attrib.get("time", 0))
             for child in root:
                 combined_root.append(child)
@@ -33,17 +34,17 @@ def get_combined_artifact(fixture_paths: list[Path]) -> Path:
     combined_root.set("tests", str(num_tests_attribute))
     combined_root.set("errors", str(errors_attribute))
     combined_root.set("time", str(amount_of_time_attribute))
-    combined_tree.write(combined_path, encoding="utf-8", xml_declaration=True)  
+    combined_tree.write(combined_path, encoding="utf-8", xml_declaration=True)
     return combined_path
 
 
 def extract_testsuite(zip_path: Path) -> ET.ElementTree[ET.Element] | None:
-# ...existing code...:
+    # ...existing code...:
     if not os.path.exists(zip_path):
         logger.error(f"Zip file does not exist: {zip_path}")
         return None
     try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
             for file_name in zip_ref.namelist():
                 if file_name.endswith("junit.xml"):
                     with zip_ref.open(file_name) as f:
@@ -51,4 +52,4 @@ def extract_testsuite(zip_path: Path) -> ET.ElementTree[ET.Element] | None:
                         return tree
     except Exception as e:
         logger.error(f"Failed to extract testsuite from zip: {zip_path} {e}")
-        return None 
+        return None

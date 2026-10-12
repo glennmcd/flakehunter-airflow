@@ -10,13 +10,12 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-
 def download_first_unexpired_artifact(fixture: dict) -> str:
     # Placeholder implementation
     if "artifacts" in fixture and fixture["artifacts"]:
         first = next((x for x in fixture["artifacts"] if not x.get("expired", False)), None)
         if first is None:
-            logger.error("No unexpired artifacts found.")   
+            logger.error("No unexpired artifacts found.")
             return ""
         zip_url = first.get("archive_download_url")
         if not zip_url:
@@ -36,7 +35,7 @@ def download_first_unexpired_artifact(fixture: dict) -> str:
             "X-GitHub-Api-Version": "2022-11-28",
         }
         try:
-            with httpx.Client(headers=headers,timeout=20, follow_redirects=True) as client:
+            with httpx.Client(headers=headers, timeout=20, follow_redirects=True) as client:
                 response = client.get(zip_url)
                 response.raise_for_status()
                 with open(fixture_path, "wb") as f:
@@ -48,8 +47,10 @@ def download_first_unexpired_artifact(fixture: dict) -> str:
         return fixture_path
     return ""
 
+
 def get_github_artifacts_url(repo_owner: str, repo_name: str, artifact_id: int) -> str:
     return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs/{artifact_id}"
+
 
 def get_artifacts_spec_from_github(url: str) -> dict:
     headers = {
@@ -67,9 +68,9 @@ def get_artifacts_spec_from_github(url: str) -> dict:
         return {}
 
 
-
-def get_github_repo_run_url(repo_owner: str,repo_name: str) -> str:
+def get_github_repo_run_url(repo_owner: str, repo_name: str) -> str:
     return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs"
+
 
 def get_runs_from_github(url: str) -> dict:
     headers = {
@@ -86,7 +87,8 @@ def get_runs_from_github(url: str) -> dict:
         logger.error(f"Failed to fetch from GitHub: {e}")
         return {}
 
-def get_list_of_runs(gitHubResult:str) -> list:
+
+def get_list_of_runs(gitHubResult: str) -> list:
     # Placeholder implementation
     data = None
     try:
@@ -95,7 +97,7 @@ def get_list_of_runs(gitHubResult:str) -> list:
         logger.error(f"Failed to decode JSON: {gitHubResult}")
         logger.error(f"{e}")
         return []
-    #iterate over the children of the "workflow_runs" key into a list
+    # iterate over the children of the "workflow_runs" key into a list
     list_of_runs = []
     if "workflow_runs" in data:
         for a_run in data["workflow_runs"]:
@@ -106,15 +108,17 @@ def get_list_of_runs(gitHubResult:str) -> list:
                 logger.error(f"Run is not trusted: {a_run}")
                 continue
             result_run = extract_required_fields(a_run)
-            list_of_runs.append(result_run )
+            list_of_runs.append(result_run)
 
     return list_of_runs
 
-def is_run_trusted(run,repo_id):
+
+def is_run_trusted(run, repo_id):
     return (
         run["event"] in ["push", "pull_request", "merge_group", "schedule", "workflow_dispatch"]
         and run["head_repository"].get("id") == repo_id
     )
+
 
 def extract_required_fields(a_run: dict) -> dict:
     return {
@@ -126,8 +130,9 @@ def extract_required_fields(a_run: dict) -> dict:
         "name": a_run.get("name"),
         "run_started_at": a_run.get("run_started_at"),
         "artifacts_url": a_run.get("artifacts_url"),
-        "event": a_run.get("event")
+        "event": a_run.get("event"),
     }
+
 
 def required_fields_exists(run: dict) -> bool:
     required_fields = [

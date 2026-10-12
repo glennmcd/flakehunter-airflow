@@ -1,4 +1,3 @@
-
 import json
 import os
 from pathlib import Path
@@ -16,7 +15,7 @@ def main() -> int:
         "X-GitHub-Api-Version": "2022-11-28",
     }
     print(headers)
-    with httpx.Client(headers=headers,timeout=10) as client:
+    with httpx.Client(headers=headers, timeout=10) as client:
         response = client.get(url)
         response.raise_for_status()
         data = response.json()
@@ -25,5 +24,7 @@ def main() -> int:
         )
         fixture_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return 0
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())    
+    raise SystemExit(main())
