@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="dag combined" tests="4" failures="1" errors="0" time="0.604">
+    <testsuite name="tests/flaky.test.ts" timestamp="2026-10-05T22:24:04.550Z" hostname="runnervm8df0l" tests="2" failures="1" errors="0" skipped="0" time="0.006670696">
+        <testcase classname="tests/flaky.test.ts" name="FixtureSuite &gt; stable test always passes" time="0.001230335">
+        </testcase>
+        <testcase classname="tests/flaky.test.ts" name="FixtureSuite &gt; maybe flaky test" time="0.004247306">
+            <failure message="expected 0.30031338103452176 to be greater than 0.5" type="AssertionError">
+AssertionError: expected 0.30031338103452176 to be greater than 0.5
+ ❯ tests/flaky.test.ts:9:27
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/flaky.test.ts" timestamp="2026-10-05T22:25:53.935Z" hostname="runnervm8df0l" tests="2" failures="0" errors="0" skipped="0" time="0.002649705">
+        <testcase classname="tests/flaky.test.ts" name="FixtureSuite &gt; stable test always passes" time="0.001178624">
+        </testcase>
+        <testcase classname="tests/flaky.test.ts" name="FixtureSuite &gt; maybe flaky test" time="0.000340527">
+        </testcase>
+    </testsuite>    
+</testsuites>

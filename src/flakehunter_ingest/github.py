@@ -1,0 +1,146 @@
+import os
+import httpx
+import json
+import logging
+import random
+import string
+import tempfile
+import zipfile
+from pathlib import Path
+import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import Element
+    
+logger = logging.getLogger(__name__)
+
+
+
+def download_first_unexpired_artifact(fixture: dict) -> str:
+    # Placeholder implementation
+    if "artifacts" in fixture and fixture["artifacts"]:
+        first = next((x for x in fixture["artifacts"] if not x.get("expired", False)), None)
+        if first == None:
+            logger.error("No unexpired artifacts found.")   
+            return ""
+        zip_url = first.get("archive_download_url")
+        if not zip_url:
+            logger.error("No download URL found for the first unexpired artifact.")
+            return ""
+        # Placeholder for actual download logic
+        logger.info(f"Downloading artifact from {zip_url}")
+        # get random filename for download
+        random_filename = 'archive_'.join(random.choices(string.ascii_lowercase + string.digits, k=10)) + ".zip"
+        temp_dir = tempfile.gettempdir()
+        fixture_path = os.path.join(temp_dir, random_filename)
+        YOUR_GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {YOUR_GITHUB_TOKEN}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        try:
+            with httpx.Client(headers=headers,timeout=20, follow_redirects=True) as client:
+                response = client.get(zip_url)
+                response.raise_for_status()
+                with open(fixture_path, "wb") as f:
+                    f.write(response.content)
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to download artifact zip: {zip_url} {e}")
+            return ""
+
+        return fixture_path
+    return ""
+
+def get_github_artifacts_url(repo_owner: str, repo_name: str, artifact_id: int) -> str:
+    return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs/{artifact_id}"
+
+def get_artifacts_spec_from_github(url: str) -> dict:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    try:
+        with httpx.Client(headers=headers, timeout=10) as client:
+            response = client.get(url)
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to fetch from GitHub: {e}")
+        return {}
+
+
+
+def get_github_repo_run_url(repo_owner: str,repo_name: str) -> str:
+    return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs"
+
+def get_runs_from_github(url: str) -> dict:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    try:
+        with httpx.Client(headers=headers, timeout=10) as client:
+            response = client.get(url)
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to fetch from GitHub: {e}")
+        return {}
+
+def get_list_of_runs(gitHubResult:str) -> list:
+    # Placeholder implementation
+    data = None
+    try:
+        data = json.loads(gitHubResult)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to decode JSON: {gitHubResult}")
+        logger.error(f"{e}")
+        return []
+    #iterate over the children of the "workflow_runs" key into a list
+    list_of_runs = []
+    if "workflow_runs" in data:
+        for a_run in data["workflow_runs"]:
+            if not required_fields_exists(a_run):
+                logger.error(f"Run missing required fields: {a_run}")
+                continue
+            if not is_run_trusted(a_run, a_run["head_repository"].get("id")):
+                logger.error(f"Run is not trusted: {a_run}")
+                continue
+            result_run = extract_required_fields(a_run)
+            list_of_runs.append(result_run )
+
+    return list_of_runs
+
+def is_run_trusted(run,repo_id):
+    if run["event"] in ["push", "pull_request", "merge_group", "schedule", "workflow_dispatch"] \
+        and run["head_repository"].get("id") == repo_id:
+        return True
+    return False
+
+def extract_required_fields(a_run: dict) -> dict:
+    return {
+        "id": a_run.get("id"),
+        "head_repository": a_run.get("head_repository"),
+        "run_attempt": a_run.get("run_attempt"),
+        "head_sha": a_run.get("head_sha"),
+        "head_branch": a_run.get("head_branch"),
+        "name": a_run.get("name"),
+        "run_started_at": a_run.get("run_started_at"),
+        "artifacts_url": a_run.get("artifacts_url"),
+        "event": a_run.get("event")
+    }
+
+def required_fields_exists(run: dict) -> bool:
+    required_fields = [
+        "id",
+        "head_repository",
+        "run_attempt",
+        "head_sha",
+        "head_branch",
+        "name",
+        "run_started_at",
+        "artifacts_url",
+        "event",
+    ]
+    return all(field in run for field in required_fields)

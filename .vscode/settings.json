@@ -1,0 +1,14 @@
+{
+    "python.testing.pytestArgs": [
+        "tests","--log-cli-level=DEBUG"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "cSpell.words": [
+        "flakehunter",
+        "glennmcd",
+        "lookback",
+        "respx",
+        "runnervm"
+    ]
+}
