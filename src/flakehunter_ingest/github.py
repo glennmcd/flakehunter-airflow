@@ -1,15 +1,12 @@
-import os
-import httpx
 import json
 import logging
+import os
 import random
 import string
 import tempfile
-import zipfile
-from pathlib import Path
-import xml.etree.ElementTree as ET
-from xml.etree.ElementTree import Element
-    
+
+import httpx
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +15,7 @@ def download_first_unexpired_artifact(fixture: dict) -> str:
     # Placeholder implementation
     if "artifacts" in fixture and fixture["artifacts"]:
         first = next((x for x in fixture["artifacts"] if not x.get("expired", False)), None)
-        if first == None:
+        if first is None:
             logger.error("No unexpired artifacts found.")   
             return ""
         zip_url = first.get("archive_download_url")
@@ -28,7 +25,8 @@ def download_first_unexpired_artifact(fixture: dict) -> str:
         # Placeholder for actual download logic
         logger.info(f"Downloading artifact from {zip_url}")
         # get random filename for download
-        random_filename = 'archive_'.join(random.choices(string.ascii_lowercase + string.digits, k=10)) + ".zip"
+        suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=10))
+        random_filename = f"archive_{suffix}.zip"
         temp_dir = tempfile.gettempdir()
         fixture_path = os.path.join(temp_dir, random_filename)
         YOUR_GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -113,10 +111,10 @@ def get_list_of_runs(gitHubResult:str) -> list:
     return list_of_runs
 
 def is_run_trusted(run,repo_id):
-    if run["event"] in ["push", "pull_request", "merge_group", "schedule", "workflow_dispatch"] \
-        and run["head_repository"].get("id") == repo_id:
-        return True
-    return False
+    return (
+        run["event"] in ["push", "pull_request", "merge_group", "schedule", "workflow_dispatch"]
+        and run["head_repository"].get("id") == repo_id
+    )
 
 def extract_required_fields(a_run: dict) -> dict:
     return {

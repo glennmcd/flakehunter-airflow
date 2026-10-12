@@ -1,17 +1,12 @@
 from __future__ import annotations
 
-import os
-import httpx
-import json
 import logging
-import random
-import string
+import os
 import tempfile
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
-import xml.etree.ElementTree as ET
-from xml.etree.ElementTree import Element
-    
+
 logger = logging.getLogger(__name__)
 
 def get_combined_artifact(fixture_paths: list[Path]) -> Path:
@@ -23,7 +18,7 @@ def get_combined_artifact(fixture_paths: list[Path]) -> Path:
     errors_attribute = 0
     amount_of_time_attribute = 0
     for fixture_path in fixture_paths:
-        with open(fixture_path, "r", encoding="utf-8") as f:
+        with open(fixture_path, encoding="utf-8") as f:
             tree = ET.parse(f)
             root = tree.getroot()
             failures_attribute += int(root.attrib.get("failures", 0))

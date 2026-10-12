@@ -5,9 +5,12 @@ from pathlib import Path
 
 import httpx
 
+FIXTURES_DIR = Path(__file__).resolve().parent.parent / "tests" / "fixtures"
+
+
 # use export GITHUB_TOKEN=your_token_here in bash
 def download_github_artifact_zip() -> int:
-    url = f"https://api.github.com/repos/glennmcd/flakehunter-test-fixture/actions/artifacts/11375895934/zip"
+    url = "https://api.github.com/repos/glennmcd/flakehunter-test-fixture/actions/artifacts/11375895934/zip"
     YOUR_GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
     headers = {
         "Accept": "application/vnd.github+json",
@@ -19,12 +22,12 @@ def download_github_artifact_zip() -> int:
         response = client.get(url)
         response.raise_for_status()
        
-        fixture_path = Path("C:\\Users\\glenn\\Documents\\git\\flakehunter-airflow\\tests\\fixtures").parent / "fixtures" / "github_artifact.zip"
+        fixture_path = FIXTURES_DIR / "github_artifact.zip"
         fixture_path.write_bytes(response.content)
     return 0
 
 def download_github_artifact():
-    url = f"https://api.github.com/repos/glennmcd/flakehunter-test-fixture/actions/runs/37382066142/artifacts"
+    url = "https://api.github.com/repos/glennmcd/flakehunter-test-fixture/actions/runs/37382066142/artifacts"
     YOUR_GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
     headers = {
         "Accept": "application/vnd.github+json",
@@ -36,7 +39,7 @@ def download_github_artifact():
         response = client.get(url)
         response.raise_for_status()
         data = response.json()
-        fixture_path = Path("C:\\Users\\glenn\\Documents\\git\\flakehunter-airflow\\tests\\fixtures").parent / "fixtures" / "artifact_spec.json"
+        fixture_path = FIXTURES_DIR / "artifact_spec.json"
         fixture_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 def main() -> int:

@@ -4,10 +4,13 @@ from __future__ import annotations
 # [START example_dynamic_task_mapping]
 from datetime import datetime
 
-from airflow.sdk import DAG, task, task_group
+from airflow.sdk import DAG, task
 
 with DAG(
-    dag_id="example_dynamic_task_mapping", schedule=None, start_date=datetime(2022, 3, 4), tags=["example"]
+    dag_id="example_dynamic_task_mapping",
+    schedule=None,
+    start_date=datetime(2022, 3, 4),
+    tags=["example"],
 ):
 
     

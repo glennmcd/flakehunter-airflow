@@ -1,19 +1,24 @@
 
 import json
+import logging
 from pathlib import Path
 
 import httpx
-import pytest
 import respx
-import logging
-import zipfile
-import xml.etree.ElementTree as ET
 
+from flakehunter_ingest.github import (
+    download_first_unexpired_artifact,
+    get_artifacts_spec_from_github,
+    get_github_artifacts_url,
+    get_github_repo_run_url,
+    get_list_of_runs,
+    get_runs_from_github,
+    is_run_trusted,
+    required_fields_exists,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
-
-from flakehunter_ingest.github import *
 
 # discover_runs lists completed workflow runs for each configured repository,
 # created in the data interval plus a 24-hour lookback 
@@ -41,9 +46,9 @@ from flakehunter_ingest.github import *
 def test_github_download_zip():
     fixture_path = Path(__file__).parent / "fixtures" / "artifact_spec.json"
     zip_path = Path(__file__).parent / "fixtures" / "github_artifact.zip"
-    fixture = json.loads(open(fixture_path, "r", encoding="utf-8").read())
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
     url = fixture["artifacts"][0]["archive_download_url"]
-    streamData = open(zip_path, "rb").read()
+    streamData = zip_path.read_bytes()
     respx.get(url).mock(return_value=httpx.Response(200, content=streamData))
     result = download_first_unexpired_artifact(fixture)
     assert result
@@ -57,9 +62,9 @@ def test_github_artifacts_fixture_httpx_call():
     repo_name = "flakehunter-test-fixture"
     repo_owner = "glennmcd"
     fixture_path = Path(__file__).parent / "fixtures" / "artifact_spec.json"
-    strData = open(fixture_path, "r", encoding="utf-8").read()
+    strData = fixture_path.read_text(encoding="utf-8")
     url = get_github_artifacts_url(repo_owner, repo_name, artifact_id=11375895934)
-    route = respx.get(url).mock(return_value=httpx.Response(200, json=strData))
+    respx.get(url).mock(return_value=httpx.Response(200, json=strData))
     call_result = get_artifacts_spec_from_github(url)
     assert call_result is not None
     assert call_result == strData
@@ -70,16 +75,16 @@ def test_github_runs_httpx_call():
     repo_name = "flakehunter-test-fixture"
     repo_owner = "glennmcd"
     fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-    strData = open(fixture_path, "r", encoding="utf-8").read()
+    strData = fixture_path.read_text(encoding="utf-8")
     url = get_github_repo_run_url(repo_owner,repo_name)
-    route = respx.get(url).mock(return_value=httpx.Response(200, json=strData))
+    respx.get(url).mock(return_value=httpx.Response(200, json=strData))
     call_result = get_runs_from_github(url)
     assert call_result is not None
     assert call_result == strData
 
 def test_returns_list_of_runs():
     fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-    strData = open(fixture_path, "r", encoding="utf-8").read()
+    strData = fixture_path.read_text(encoding="utf-8")
     list_of_runs = get_list_of_runs(strData)
     assert isinstance(list_of_runs, list)
     assert len(list_of_runs) == 10
@@ -87,7 +92,7 @@ def test_returns_list_of_runs():
     
 def test_runs_have_required_fields():
     fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-    strData = open(fixture_path, "r", encoding="utf-8").read()
+    strData = fixture_path.read_text(encoding="utf-8")
     list_of_runs = get_list_of_runs(strData)
     assert isinstance(list_of_runs, list)
     assert len(list_of_runs) == 10
@@ -96,7 +101,7 @@ def test_runs_have_required_fields():
 
 def test_trust_logic():
     fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-    strData = open(fixture_path, "r", encoding="utf-8").read()
+    strData = fixture_path.read_text(encoding="utf-8")
     list_of_runs = get_list_of_runs(strData)
     assert isinstance(list_of_runs, list)
     assert len(list_of_runs) == 10

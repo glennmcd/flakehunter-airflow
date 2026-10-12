@@ -1,20 +1,12 @@
 
-import json
+import logging
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import httpx
-import pytest
-import respx
-import logging
-import zipfile
-import xml.etree.ElementTree as ET
-
+from flakehunter_ingest.junit import extract_testsuite, get_combined_artifact
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
-
-
-from flakehunter_ingest.junit import *
 
 # discover_runs lists completed workflow runs for each configured repository,
 # created in the data interval plus a 24-hour lookback 
@@ -40,18 +32,20 @@ from flakehunter_ingest.junit import *
 
 def test_extract_junit_combined():
     fixture_path = Path(__file__).parent / "fixtures" / "junit_combined.xml"
-    junit_data_combined = ET.parse(open(fixture_path, "r", encoding="utf-8"))
+    junit_data_combined = ET.parse(fixture_path)
     
     fixture_path_1 = Path(__file__).parent / "fixtures" / "junit.xml"
     fixture_path_2 = Path(__file__).parent / "fixtures" / "junit2.xml"
     combined_path = get_combined_artifact([fixture_path_1, fixture_path_2])
-    junit_data_results = ET.parse(open(combined_path, "r", encoding="utf-8"))
+    junit_data_results = ET.parse(combined_path)
             
    
     junit_data_combined_top = junit_data_combined.getroot()
     strip_whitespace(junit_data_combined_top)
     assert junit_data_combined_top is not None
-    junit_data_combined_top_string = ET.tostring(junit_data_combined_top, encoding="utf-8").decode("utf-8")
+    junit_data_combined_top_string = ET.tostring(
+        junit_data_combined_top, encoding="utf-8"
+    ).decode("utf-8")
     
     junit_data_top = junit_data_results.getroot()
     strip_whitespace(junit_data_top)
@@ -73,7 +67,7 @@ def strip_whitespace(element):
 
 def test_extract_junit():
     fixture_path = Path(__file__).parent / "fixtures" / "junit.xml"
-    junit_data = ET.parse(open(fixture_path, "r", encoding="utf-8"))
+    junit_data = ET.parse(fixture_path)
     
     zip_path = Path(__file__).parent / "fixtures" / "github_artifact.zip"
 
