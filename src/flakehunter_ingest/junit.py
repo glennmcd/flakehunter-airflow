@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-import tempfile
 import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
@@ -10,7 +9,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def get_combined_artifact(fixture_paths: list[Path]) -> Path:
+def get_combined_artifact(fixture_paths: list[Path], output_filepath: Path) -> Path:
 
     combined_root = ET.Element("testsuites")
     combined_tree = ET.ElementTree(combined_root)
@@ -28,14 +27,14 @@ def get_combined_artifact(fixture_paths: list[Path]) -> Path:
             amount_of_time_attribute += float(root.attrib.get("time", 0))
             for child in root:
                 combined_root.append(child)
-    combined_path = Path(tempfile.gettempdir()) / "combined_junit.xml"
+
     combined_root.set("name", "dag combined")
     combined_root.set("failures", str(failures_attribute))
     combined_root.set("tests", str(num_tests_attribute))
     combined_root.set("errors", str(errors_attribute))
     combined_root.set("time", str(amount_of_time_attribute))
-    combined_tree.write(combined_path, encoding="utf-8", xml_declaration=True)
-    return combined_path
+    combined_tree.write(output_filepath, encoding="utf-8", xml_declaration=True)
+    return output_filepath
 
 
 def extract_testsuite(zip_path: Path) -> list[ET.ElementTree[ET.Element]] | None:

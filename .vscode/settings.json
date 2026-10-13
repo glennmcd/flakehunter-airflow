@@ -6,9 +6,13 @@
     "python.testing.pytestEnabled": true,
     "cSpell.words": [
         "flakehunter",
+        "ghartifactspec",
+        "ghworkflowrun",
+        "githubapi",
         "glennmcd",
         "lookback",
         "respx",
-        "runnervm"
+        "runnervm",
+        "safezip"
     ]
 }

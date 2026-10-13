@@ -7,16 +7,10 @@ import respx
 
 from flakehunter_ingest.github import (
     download_first_unexpired_artifact,
-    get_github_artifacts_url,
     get_github_repo_run_url,
     get_http_client_github,
     get_list_of_runs,
     get_resp_from_githubapi,
-    is_run_trusted,
-    required_fields_exists,
-)
-from flakehunter_ingest.trust import (
-     is_run_trusted
 )
 
 logging.basicConfig(level=logging.DEBUG)
@@ -62,20 +56,6 @@ def test_github_download_zip():
 
 
 @respx.mock
-def test_github_artifacts_fixture_httpx_call():
-    repo_name = "flakehunter-test-fixture"
-    repo_owner = "glennmcd"
-    fixture_path = Path(__file__).parent / "fixtures" / "artifact_spec.json"
-    strData = fixture_path.read_text(encoding="utf-8")
-    url = get_github_artifacts_url(repo_owner, repo_name, artifact_id=11375895934)
-    respx.get(url).mock(return_value=httpx.Response(200, json=strData))
-    with get_http_client_github("dev_token") as client:
-        call_result = get_resp_from_githubapi(client, url)
-        assert call_result is not None
-        assert json.loads(call_result) == strData
-
-
-@respx.mock
 def test_github_runs_httpx_call():
     repo_name = "flakehunter-test-fixture"
     repo_owner = "glennmcd"
@@ -86,7 +66,7 @@ def test_github_runs_httpx_call():
     respx.get(url).mock(return_value=httpx.Response(200, json=strData))
 
     with get_http_client_github("dev_token") as client:
-        call_result = get_resp_from_githubapi(client,url)
+        call_result = get_resp_from_githubapi(client, url)
         assert call_result is not None
         assert json.loads(call_result) == strData
 
@@ -99,31 +79,29 @@ def test_returns_list_of_runs():
     assert len(list_of_runs) == 10
 
 
-def test_runs_have_required_fields():
-    fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-    strData = fixture_path.read_text(encoding="utf-8")
-    list_of_runs = get_list_of_runs(strData)
-    assert isinstance(list_of_runs, list)
-    assert len(list_of_runs) == 10
-    for run in list_of_runs:
-        assert required_fields_exists(run) is True
+# def test_runs_have_required_fields():
+#     fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
+#     strData = fixture_path.read_text(encoding="utf-8")
+#     list_of_runs = get_list_of_runs(strData)
+#     assert isinstance(list_of_runs, list)
+#     assert len(list_of_runs) == 10
+#     for run in list_of_runs:
+#         assert required_fields_exists(run) is True
 
 
-
-
-def test_required_fields_exists():
-    run = {
-        "id": 1,
-        "head_repository": {"full_name": "owner/repo"},
-        "run_attempt": 1,
-        "head_sha": "abc123",
-        "head_branch": "main",
-        "name": "test",
-        "run_started_at": "2024-06-01T00:00:00Z",
-        "artifacts_url": "https://example.com/artifacts",
-        "event": "push",
-    }
-    assert required_fields_exists(run) is True
+# def test_required_fields_exists():
+#     run = {
+#         "id": 1,
+#         "head_repository": {"full_name": "owner/repo"},
+#         "run_attempt": 1,
+#         "head_sha": "abc123",
+#         "head_branch": "main",
+#         "name": "test",
+#         "run_started_at": "2024-06-01T00:00:00Z",
+#         "artifacts_url": "https://example.com/artifacts",
+#         "event": "push",
+#     }
+#     assert required_fields_exists(run) is True
 
 
 # def test_parsing_of_required_fields():

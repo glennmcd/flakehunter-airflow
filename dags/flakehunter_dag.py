@@ -8,6 +8,7 @@ from tkinter import Variable
 
 from airflow.sdk import DAG, task
 
+from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
 from flakehunter_ingest.github import (
     get_github_repo_run_url,
     get_http_client_github,
@@ -33,15 +34,17 @@ with DAG(
         for a in repos:
             owner, repo = a.split("/")
             url = get_github_repo_run_url(owner, repo)
-            with get_http_client_github(github_default, url) as client:
+            with get_http_client_github(github_default) as client:
                 runs_data = get_resp_from_githubapi(client,url)
-                run_list.extend(get_list_of_runs(json.loads(runs_data))
+                run_list.extend(get_list_of_runs(json.loads(runs_data)))
 
         return run_list
 
     @task
-    def upload_run(x: json):
+    def upload_run(x: GhWorkflowRun):
 
+        
+        
         return x
 
     @task
