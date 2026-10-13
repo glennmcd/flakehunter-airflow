@@ -72,10 +72,10 @@ def get_github_repo_run_url(repo_owner: str, repo_name: str) -> str:
     return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs"
 
 
-def get_runs_from_github(url: str) -> dict:
+def get_runs_from_github(url: str, github_default: str) -> dict:
     headers = {
         "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        "Authorization": f"Bearer {github_default}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
     try:
