@@ -4,9 +4,9 @@ import json
 
 # [START example_dynamic_task_mapping]
 from datetime import datetime
-from tkinter import Variable
 
-from airflow.sdk import DAG, task
+
+from airflow.sdk import DAG, Variable, task
 
 from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
 from flakehunter_ingest.github import (
@@ -15,6 +15,7 @@ from flakehunter_ingest.github import (
     get_list_of_runs,
     get_resp_from_githubapi,
 )
+from flakehunter_ingest.processrun import process_ghworkflowrun
 
 with DAG(
     dag_id="example_dynamic_task_mapping",
@@ -35,7 +36,7 @@ with DAG(
             owner, repo = a.split("/")
             url = get_github_repo_run_url(owner, repo)
             with get_http_client_github(github_default) as client:
-                runs_data = get_resp_from_githubapi(client,url)
+                runs_data = get_resp_from_githubapi(client, url)
                 run_list.extend(get_list_of_runs(json.loads(runs_data)))
 
         return run_list
@@ -43,8 +44,12 @@ with DAG(
     @task
     def upload_run(x: GhWorkflowRun):
 
-        
-        
+        upload_json = Variable.get(
+            f"flakehunter_upload_{x.repository_owner}_{x.repository_name}", deserialize_json=True
+        )
+
+        process_ghworkflowrun(x, upload_json.get("token"), upload_json.get("url"))
+
         return x
 
     @task

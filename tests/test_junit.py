@@ -40,7 +40,7 @@ def test_extract_junit_combined():
     combined_path = Path(__file__).parent / "fixtures" / "test_extract_junit_combined.xml"
     combined_path = get_combined_artifact([fixture_path_1, fixture_path_2], combined_path)
     junit_data_results = ET.parse(combined_path)
-   
+
     try:
         junit_data_combined_top = junit_data_combined.getroot()
         strip_whitespace(junit_data_combined_top)

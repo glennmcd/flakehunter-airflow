@@ -52,7 +52,7 @@ def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str):
     suites_file = construct_suites(output_dir)
     suites_file_xml: bytes = suites_file.read_bytes()
 
-    # At this point, suites_file contains 
+    # At this point, suites_file contains
     # the combined XML of all test suites extracted from the artifact.
     # upload to flakehunter API or any other relevant endpoint
     api_client = make_client(uploadUrl, uploadToken)
