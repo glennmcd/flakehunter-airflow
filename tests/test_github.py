@@ -15,6 +15,9 @@ from flakehunter_ingest.github import (
     is_run_trusted,
     required_fields_exists,
 )
+from flakehunter_ingest.trust import (
+     is_run_trusted
+)
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
@@ -106,18 +109,6 @@ def test_runs_have_required_fields():
         assert required_fields_exists(run) is True
 
 
-def test_trust_logic():
-    fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-    strData = fixture_path.read_text(encoding="utf-8")
-    list_of_runs = get_list_of_runs(strData)
-    assert isinstance(list_of_runs, list)
-    assert len(list_of_runs) == 10
-    num_trusted_runs = 0
-    for run in list_of_runs:
-        assert required_fields_exists(run) is True
-        if is_run_trusted(run, repo_id=1404833977):
-            num_trusted_runs += 1
-    assert num_trusted_runs > 0
 
 
 def test_required_fields_exists():

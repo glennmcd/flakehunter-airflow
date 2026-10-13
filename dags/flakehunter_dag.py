@@ -34,8 +34,8 @@ with DAG(
             owner, repo = a.split("/")
             url = get_github_repo_run_url(owner, repo)
             with get_http_client_github(github_default, url) as client:
-                runs_data = get_resp_from_githubapi(client)
-                run_list.extend(get_list_of_runs(runs_data))
+                runs_data = get_resp_from_githubapi(client,url)
+                run_list.extend(get_list_of_runs(json.loads(runs_data))
 
         return run_list
 

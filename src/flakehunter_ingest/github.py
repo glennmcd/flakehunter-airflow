@@ -6,6 +6,9 @@ import string
 import tempfile
 
 import httpx
+from flakehunter_ingest.trust import (
+     is_run_trusted
+)
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +104,7 @@ def get_list_of_runs(gitHubResult: str) -> list:
             if not required_fields_exists(a_run):
                 logger.error(f"Run missing required fields: {a_run}")
                 continue
-            if not is_run_trusted(a_run, a_run["head_repository"].get("id")):
+            if not is_run_trusted(a_run):
                 logger.error(f"Run is not trusted: {a_run}")
                 continue
             result_run = extract_required_fields(a_run)
@@ -110,17 +113,13 @@ def get_list_of_runs(gitHubResult: str) -> list:
     return list_of_runs
 
 
-def is_run_trusted(run, repo_id):
-    return (
-        run["event"] in ["push", "pull_request", "merge_group", "schedule", "workflow_dispatch"]
-        and run["head_repository"].get("id") == repo_id
-    )
 
 
 def extract_required_fields(a_run: dict) -> dict:
     return {
         "id": a_run.get("id"),
         "head_repository": a_run.get("head_repository"),
+        "repository": a_run.get("repository"),
         "run_attempt": a_run.get("run_attempt"),
         "head_sha": a_run.get("head_sha"),
         "head_branch": a_run.get("head_branch"),
@@ -135,6 +134,7 @@ def required_fields_exists(run: dict) -> bool:
     required_fields = [
         "id",
         "head_repository",
+        "repository",
         "run_attempt",
         "head_sha",
         "head_branch",
