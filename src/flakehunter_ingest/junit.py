@@ -38,18 +38,20 @@ def get_combined_artifact(fixture_paths: list[Path]) -> Path:
     return combined_path
 
 
-def extract_testsuite(zip_path: Path) -> ET.ElementTree[ET.Element] | None:
+def extract_testsuite(zip_path: Path) -> list[ET.ElementTree[ET.Element]] | None:
     # ...existing code...:
     if not os.path.exists(zip_path):
         logger.error(f"Zip file does not exist: {zip_path}")
         return None
     try:
+        extracted_trees = []
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             for file_name in zip_ref.namelist():
-                if file_name.endswith("junit.xml"):
+                if file_name.endswith(".xml"):
                     with zip_ref.open(file_name) as f:
                         tree = ET.parse(f)
-                        return tree
+                        extracted_trees.append(tree)
+        return extracted_trees if extracted_trees else None
     except Exception as e:
         logger.error(f"Failed to extract testsuite from zip: {zip_path} {e}")
         return None

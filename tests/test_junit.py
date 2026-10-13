@@ -66,15 +66,28 @@ def strip_whitespace(element):
     return element
 
 
+def test_extract_multiple_testsuites():
+    zip_path = Path(__file__).parent / "fixtures" / "github_artifact2.zip"
+    testsuites = extract_testsuite(zip_path)
+    assert testsuites is not None
+    assert len(testsuites) > 1
+    for testsuite in testsuites:
+        testsuite_top = testsuite.getroot()
+        assert testsuite_top is not None
+        testsuite_top_string = ET.tostring(testsuite_top, encoding="utf-8").decode("utf-8")
+        assert testsuite_top_string is not None
+
+
 def test_extract_junit():
     fixture_path = Path(__file__).parent / "fixtures" / "junit.xml"
     junit_data = ET.parse(fixture_path)
 
     zip_path = Path(__file__).parent / "fixtures" / "github_artifact.zip"
 
-    testsuite = extract_testsuite(zip_path)
-    assert testsuite is not None
-    testsuite_top = testsuite.getroot()
+    testsuites = extract_testsuite(zip_path)
+    assert testsuites is not None
+    assert len(testsuites) == 1
+    testsuite_top = testsuites[0].getroot()
     assert testsuite_top is not None
     testsuite_top_string = ET.tostring(testsuite_top, encoding="utf-8").decode("utf-8")
     junit_data_top = junit_data.getroot()

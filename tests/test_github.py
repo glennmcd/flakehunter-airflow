@@ -79,7 +79,7 @@ def test_github_runs_httpx_call():
     strData = fixture_path.read_text(encoding="utf-8")
     url = get_github_repo_run_url(repo_owner, repo_name)
     respx.get(url).mock(return_value=httpx.Response(200, json=strData))
-    call_result = get_runs_from_github(url)
+    call_result = get_runs_from_github(url, "test_token")
     assert call_result is not None
     assert call_result == strData
 
