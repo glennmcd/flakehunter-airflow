@@ -48,44 +48,41 @@ def download_first_unexpired_artifact(fixture: dict) -> str:
     return ""
 
 
-def get_github_artifacts_url(repo_owner: str, repo_name: str, artifact_id: int) -> str:
-    return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs/{artifact_id}"
-
-
-def get_artifacts_spec_from_github(url: str) -> dict:
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    try:
-        with httpx.Client(headers=headers, timeout=10) as client:
-            response = client.get(url)
-            response.raise_for_status()
-            return response.json()
-    except httpx.HTTPError as e:
-        logger.error(f"Failed to fetch from GitHub: {e}")
-        return {}
-
-
 def get_github_repo_run_url(repo_owner: str, repo_name: str) -> str:
     return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs"
 
 
-def get_runs_from_github(url: str, github_default: str) -> dict:
+def get_github_artifacts_url(repo_owner: str, repo_name: str, artifact_id: int) -> str:
+    return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs/{artifact_id}"
+
+
+def get_http_client_github(token: str) -> httpx.Client:
     headers = {
         "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {github_default}",
+        "Authorization": f"Bearer {token}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
+    return httpx.Client(headers=headers, timeout=10)
+
+
+def construct_http_client(url: str, token: str) -> httpx.Client:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    return httpx.Client(headers=headers, timeout=10, base_url=url)
+
+
+def get_resp_from_githubapi(client: httpx.Client,url: str) -> str:
+
     try:
-        with httpx.Client(headers=headers, timeout=10) as client:
-            response = client.get(url)
-            response.raise_for_status()
-            return response.json()
+        response = client.get(url=url)
+        response.raise_for_status()
+        return response.text
     except httpx.HTTPError as e:
         logger.error(f"Failed to fetch from GitHub: {e}")
-        return {}
+        return ""
 
 
 def get_list_of_runs(gitHubResult: str) -> list:

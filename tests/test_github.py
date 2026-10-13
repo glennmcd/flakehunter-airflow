@@ -7,11 +7,11 @@ import respx
 
 from flakehunter_ingest.github import (
     download_first_unexpired_artifact,
-    get_artifacts_spec_from_github,
     get_github_artifacts_url,
     get_github_repo_run_url,
+    get_http_client_github,
     get_list_of_runs,
-    get_runs_from_github,
+    get_resp_from_githubapi,
     is_run_trusted,
     required_fields_exists,
 )
@@ -66,9 +66,10 @@ def test_github_artifacts_fixture_httpx_call():
     strData = fixture_path.read_text(encoding="utf-8")
     url = get_github_artifacts_url(repo_owner, repo_name, artifact_id=11375895934)
     respx.get(url).mock(return_value=httpx.Response(200, json=strData))
-    call_result = get_artifacts_spec_from_github(url)
-    assert call_result is not None
-    assert call_result == strData
+    with get_http_client_github("dev_token") as client:
+        call_result = get_resp_from_githubapi(client, url)
+        assert call_result is not None
+        assert json.loads(call_result) == strData
 
 
 @respx.mock
@@ -78,10 +79,13 @@ def test_github_runs_httpx_call():
     fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
     strData = fixture_path.read_text(encoding="utf-8")
     url = get_github_repo_run_url(repo_owner, repo_name)
+
     respx.get(url).mock(return_value=httpx.Response(200, json=strData))
-    call_result = get_runs_from_github(url, "test_token")
-    assert call_result is not None
-    assert call_result == strData
+
+    with get_http_client_github("dev_token") as client:
+        call_result = get_resp_from_githubapi(client,url)
+        assert call_result is not None
+        assert json.loads(call_result) == strData
 
 
 def test_returns_list_of_runs():
