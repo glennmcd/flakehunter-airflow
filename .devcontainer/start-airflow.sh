@@ -5,6 +5,10 @@ W=$(pwd)
 [ -x "$W/.venv/bin/airflow" ] || bash "$W/.devcontainer/install.sh"
 export AIRFLOW_HOME=$W/.airflow AIRFLOW__CORE__DAGS_FOLDER=$W/dags AIRFLOW__CORE__LOAD_EXAMPLES=False
 mkdir -p "$AIRFLOW_HOME" "$AIRFLOW__CORE__DAGS_FOLDER"
+# In Codespaces the UI is reached through the forwarded URL, not localhost:8080.
+if [ -n "${CODESPACE_NAME:-}" ] && [ -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}" ]; then
+  export AIRFLOW__API__BASE_URL="https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
+fi
 
 # Already serving: nothing to do.
 curl -sf --max-time 5 http://localhost:8080/api/v2/monitor/health >/dev/null && exit 0
