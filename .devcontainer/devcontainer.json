@@ -7,7 +7,7 @@
     "AIRFLOW__CORE__LOAD_EXAMPLES": "False",
     "PATH": "${containerWorkspaceFolder}/.venv/bin:${containerEnv:PATH}"
   },
-  "postCreateCommand": "bash -c 'set -e; curl -LsSf https://astral.sh/uv/install.sh | sh; export PATH=\"$HOME/.local/bin:$PATH\"; AIRFLOW_VERSION=3.3.2; PYTHON_VERSION=$(python -c \"import sys; print(f\\\"{sys.version_info.major}.{sys.version_info.minor}\\\")\"); uv venv .venv; uv pip install --python .venv/bin/python \"apache-airflow[http,github]==${AIRFLOW_VERSION}\" -e . pytest respx ruff --constraint \"https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt\"'",
+  "postCreateCommand": "bash .devcontainer/install.sh",
   "postStartCommand": "bash .devcontainer/start-airflow.sh",
   "forwardPorts": [8080],
   "portsAttributes": {
