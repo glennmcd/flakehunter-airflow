@@ -4,10 +4,39 @@ import os
 import random
 import string
 import tempfile
+from pathlib import Path
 
 import httpx
 
+from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
+from flakehunter_ingest.trust import is_run_trusted
+
 logger = logging.getLogger(__name__)
+
+
+class GitHubRunData:
+    def __init__(self, run: dict):
+        self.run = run
+
+
+def download_artifact(client: httpx.Client, zip_url: str) -> Path | None:
+    # Placeholder implementation
+    # Placeholder for actual download logic
+    logger.info(f"Downloading artifact from {zip_url}")
+    # get random filename for download
+    root_temp_dir = tempfile.mkdtemp(prefix="fh_scratch")
+    artifact_path = Path(root_temp_dir) / "artifact.zip"
+
+    try:
+        response = client.get(zip_url)
+        response.raise_for_status()
+        with open(artifact_path, "wb") as f:
+            f.write(response.content)
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to download artifact zip: {zip_url} {e}")
+        return None
+
+    return artifact_path or None
 
 
 def download_first_unexpired_artifact(fixture: dict) -> str:
@@ -48,47 +77,40 @@ def download_first_unexpired_artifact(fixture: dict) -> str:
     return ""
 
 
-def get_github_artifacts_url(repo_owner: str, repo_name: str, artifact_id: int) -> str:
-    return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs/{artifact_id}"
-
-
-def get_artifacts_spec_from_github(url: str) -> dict:
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    try:
-        with httpx.Client(headers=headers, timeout=10) as client:
-            response = client.get(url)
-            response.raise_for_status()
-            return response.json()
-    except httpx.HTTPError as e:
-        logger.error(f"Failed to fetch from GitHub: {e}")
-        return {}
-
-
 def get_github_repo_run_url(repo_owner: str, repo_name: str) -> str:
     return f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/runs"
 
 
-def get_runs_from_github(url: str) -> dict:
+def get_http_client_github(token: str) -> httpx.Client:
     headers = {
         "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        "Authorization": f"Bearer {token}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
+    return httpx.Client(headers=headers, timeout=10)
+
+
+def construct_http_client(url: str, token: str) -> httpx.Client:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    return httpx.Client(headers=headers, timeout=10, base_url=url)
+
+
+def get_resp_from_githubapi(client: httpx.Client, url: str) -> str:
+
     try:
-        with httpx.Client(headers=headers, timeout=10) as client:
-            response = client.get(url)
-            response.raise_for_status()
-            return response.json()
+        response = client.get(url=url)
+        response.raise_for_status()
+        return response.text
     except httpx.HTTPError as e:
         logger.error(f"Failed to fetch from GitHub: {e}")
-        return {}
+        return ""
 
 
-def get_list_of_runs(gitHubResult: str) -> list:
+def get_list_of_runs(gitHubResult: str) -> list[GhWorkflowRun]:
     # Placeholder implementation
     data = None
     try:
@@ -101,29 +123,27 @@ def get_list_of_runs(gitHubResult: str) -> list:
     list_of_runs = []
     if "workflow_runs" in data:
         for a_run in data["workflow_runs"]:
-            if not required_fields_exists(a_run):
-                logger.error(f"Run missing required fields: {a_run}")
+            try:
+                run_data = GhWorkflowRun.from_api(a_run)
+            except (KeyError, ValueError) as e:
+                logger.error(f"Failed to parse run data: {a_run}")
+                logger.error(f"{e}")
                 continue
-            if not is_run_trusted(a_run, a_run["head_repository"].get("id")):
+
+            if not is_run_trusted(run_data):
                 logger.error(f"Run is not trusted: {a_run}")
                 continue
-            result_run = extract_required_fields(a_run)
-            list_of_runs.append(result_run)
+
+            list_of_runs.append(run_data)
 
     return list_of_runs
-
-
-def is_run_trusted(run, repo_id):
-    return (
-        run["event"] in ["push", "pull_request", "merge_group", "schedule", "workflow_dispatch"]
-        and run["head_repository"].get("id") == repo_id
-    )
 
 
 def extract_required_fields(a_run: dict) -> dict:
     return {
         "id": a_run.get("id"),
         "head_repository": a_run.get("head_repository"),
+        "repository": a_run.get("repository"),
         "run_attempt": a_run.get("run_attempt"),
         "head_sha": a_run.get("head_sha"),
         "head_branch": a_run.get("head_branch"),
@@ -138,6 +158,7 @@ def required_fields_exists(run: dict) -> bool:
     required_fields = [
         "id",
         "head_repository",
+        "repository",
         "run_attempt",
         "head_sha",
         "head_branch",

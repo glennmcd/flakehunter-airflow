@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="3" failures="0" errors="0" time="0.226">
+    <testsuite name="tests/unit/math.test.ts" timestamp="2026-10-13T00:53:12.164Z" hostname="runnervmmprz5" tests="3" failures="0" errors="0" skipped="0" time="0.001974674">
+        <testcase classname="tests/unit/math.test.ts" name="MathSuite &gt; adds" time="0.000855563">
+        </testcase>
+        <testcase classname="tests/unit/math.test.ts" name="MathSuite &gt; multiplies" time="0.000178009">
+        </testcase>
+        <testcase classname="tests/unit/math.test.ts" name="MathSuite &gt; divides" time="0.000135424">
+        </testcase>
+    </testsuite>
+</testsuites>

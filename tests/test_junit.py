@@ -1,4 +1,5 @@
 import logging
+import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -36,23 +37,29 @@ def test_extract_junit_combined():
 
     fixture_path_1 = Path(__file__).parent / "fixtures" / "junit.xml"
     fixture_path_2 = Path(__file__).parent / "fixtures" / "junit2.xml"
-    combined_path = get_combined_artifact([fixture_path_1, fixture_path_2])
+    combined_path = Path(__file__).parent / "fixtures" / "test_extract_junit_combined.xml"
+    combined_path = get_combined_artifact([fixture_path_1, fixture_path_2], combined_path)
     junit_data_results = ET.parse(combined_path)
 
-    junit_data_combined_top = junit_data_combined.getroot()
-    strip_whitespace(junit_data_combined_top)
-    assert junit_data_combined_top is not None
+    try:
+        junit_data_combined_top = junit_data_combined.getroot()
+        strip_whitespace(junit_data_combined_top)
+        assert junit_data_combined_top is not None
+        junit_data_top = junit_data_results.getroot()
+        strip_whitespace(junit_data_top)
+        assert junit_data_top is not None
+        junit_data_top_string = ET.tostring(junit_data_top, encoding="utf-8").decode("utf-8")
+        junit_data_combined_top_string = ET.tostring(
+            junit_data_combined_top, encoding="utf-8"
+        ).decode("utf-8")
+        a = ET.canonicalize(junit_data_combined_top_string)
+        b = ET.canonicalize(junit_data_top_string)
+        assert a == b
+    finally:
+        os.remove(combined_path)
     junit_data_combined_top_string = ET.tostring(junit_data_combined_top, encoding="utf-8").decode(
         "utf-8"
     )
-
-    junit_data_top = junit_data_results.getroot()
-    strip_whitespace(junit_data_top)
-    assert junit_data_top is not None
-    junit_data_top_string = ET.tostring(junit_data_top, encoding="utf-8").decode("utf-8")
-    a = ET.canonicalize(junit_data_combined_top_string)
-    b = ET.canonicalize(junit_data_top_string)
-    assert a == b
 
 
 def strip_whitespace(element):
@@ -66,15 +73,28 @@ def strip_whitespace(element):
     return element
 
 
+def test_extract_multiple_testsuites():
+    zip_path = Path(__file__).parent / "fixtures" / "github_artifact2.zip"
+    testsuites = extract_testsuite(zip_path)
+    assert testsuites is not None
+    assert len(testsuites) > 1
+    for testsuite in testsuites:
+        testsuite_top = testsuite.getroot()
+        assert testsuite_top is not None
+        testsuite_top_string = ET.tostring(testsuite_top, encoding="utf-8").decode("utf-8")
+        assert testsuite_top_string is not None
+
+
 def test_extract_junit():
     fixture_path = Path(__file__).parent / "fixtures" / "junit.xml"
     junit_data = ET.parse(fixture_path)
 
     zip_path = Path(__file__).parent / "fixtures" / "github_artifact.zip"
 
-    testsuite = extract_testsuite(zip_path)
-    assert testsuite is not None
-    testsuite_top = testsuite.getroot()
+    testsuites = extract_testsuite(zip_path)
+    assert testsuites is not None
+    assert len(testsuites) == 1
+    testsuite_top = testsuites[0].getroot()
     assert testsuite_top is not None
     testsuite_top_string = ET.tostring(testsuite_top, encoding="utf-8").decode("utf-8")
     junit_data_top = junit_data.getroot()

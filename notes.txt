@@ -1,0 +1,10 @@
+proces workflow
+upserts to workflowRuns db, gets run.id back
+checks if report already uploaded for run, exits if so
+lists githubs artifacts,  gets first expired
+downloads artifact, size limited
+extracts xml into suites
+inserts summary into reports
+inserts suites
+updates fetched at with now() in db
+wrapped in tx

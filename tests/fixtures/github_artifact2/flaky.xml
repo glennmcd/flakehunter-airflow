@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="2" failures="1" errors="0" time="0.262">
+    <testsuite name="tests/flaky.test.ts" timestamp="2026-10-13T00:53:11.687Z" hostname="runnervmmprz5" tests="2" failures="1" errors="0" skipped="0" time="0.004808316">
+        <testcase classname="tests/flaky.test.ts" name="FixtureSuite &gt; stable test always passes" time="0.00091326">
+        </testcase>
+        <testcase classname="tests/flaky.test.ts" name="FixtureSuite &gt; maybe flaky test" time="0.003046083">
+            <failure message="expected 0.057515836660835706 to be greater than 0.5" type="AssertionError">
+AssertionError: expected 0.057515836660835706 to be greater than 0.5
+ ❯ tests/flaky.test.ts:9:27
+            </failure>
+        </testcase>
+    </testsuite>
+</testsuites>
