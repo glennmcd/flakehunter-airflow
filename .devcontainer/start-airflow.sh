@@ -19,4 +19,5 @@ pkill -f "$PATTERN" || true
 for _ in $(seq 30); do pgrep -f "$PATTERN" >/dev/null || break; sleep 1; done
 pkill -9 -f "$PATTERN" || true
 
-setsid nohup "$W/.venv/bin/airflow" standalone >"$AIRFLOW_HOME/standalone.log" 2>&1 </dev/null &
+echo "$(date -Is) start-airflow.sh: launching airflow standalone" >"$AIRFLOW_HOME/standalone.log"
+PYTHONUNBUFFERED=1 setsid nohup "$W/.venv/bin/airflow" standalone >>"$AIRFLOW_HOME/standalone.log" 2>&1 </dev/null &
