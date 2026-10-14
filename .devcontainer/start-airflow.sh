@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Runs as postAttachCommand: Airflow stays in the foreground of the attach terminal,
+# because background processes started from lifecycle hooks are killed when the hook ends.
 set -euo pipefail
 W=$(pwd)
 # Repair .venv if postCreateCommand failed or `uv sync` removed Airflow.
@@ -10,8 +12,11 @@ if [ -n "${CODESPACE_NAME:-}" ] && [ -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOM
   export AIRFLOW__API__BASE_URL="https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
 fi
 
-# Already serving: nothing to do.
-curl -sf --max-time 5 http://localhost:8080/api/v2/monitor/health >/dev/null && exit 0
+# Already serving (e.g. a second window attached): nothing to do.
+if curl -sf --max-time 5 http://localhost:8080/api/v2/monitor/health >/dev/null; then
+  echo "Airflow is already running on port 8080."
+  exit 0
+fi
 
 # Not serving: stop leftovers from an earlier start, then start fresh.
 PATTERN='[.]venv/bin/airflow|airflow (standalone|scheduler|api.server|dag.processor|triggerer)'
@@ -19,5 +24,5 @@ pkill -f "$PATTERN" || true
 for _ in $(seq 30); do pgrep -f "$PATTERN" >/dev/null || break; sleep 1; done
 pkill -9 -f "$PATTERN" || true
 
-echo "$(date -Is) start-airflow.sh: launching airflow standalone" >"$AIRFLOW_HOME/standalone.log"
-PYTHONUNBUFFERED=1 setsid nohup "$W/.venv/bin/airflow" standalone >>"$AIRFLOW_HOME/standalone.log" 2>&1 </dev/null &
+echo "$(date -Is) start-airflow.sh: launching airflow standalone" | tee "$AIRFLOW_HOME/standalone.log"
+PYTHONUNBUFFERED=1 "$W/.venv/bin/airflow" standalone 2>&1 | tee -a "$AIRFLOW_HOME/standalone.log"
