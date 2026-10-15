@@ -5,7 +5,6 @@ import json
 # [START example_dynamic_task_mapping]
 from datetime import datetime
 
-
 from airflow.sdk import DAG, Variable, task
 
 from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
