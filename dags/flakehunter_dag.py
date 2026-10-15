@@ -5,6 +5,7 @@ import json
 # [START example_dynamic_task_mapping]
 from datetime import datetime
 
+from airflow.hooks.base import BaseHook
 from airflow.sdk import DAG, Variable, task
 
 from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
@@ -18,7 +19,7 @@ from flakehunter_ingest.github import (
 from flakehunter_ingest.processrun import process_ghworkflowrun
 
 with DAG(
-    dag_id="example_dynamic_task_mapping",
+    dag_id="flakehunter_ingest",
     schedule=None,
     start_date=datetime(2022, 3, 4),
     tags=["example"],
@@ -27,7 +28,7 @@ with DAG(
     @task
     def discover_runs():
         repos = Variable.get("flakehunter_repos", deserialize_json=True)
-        github_default = Variable.get("github_default", deserialize_json=True)
+        github_default = BaseHook.get_connection("github_default").password
 
         if repos == []:
             raise Exception("flakehunter_repos needs a list of owner/repos")
@@ -36,7 +37,7 @@ with DAG(
         for a in repos:
             owner, repo = a.split("/")
             url = get_github_repo_run_url(owner, repo)
-            with get_http_client_github(github_default) as client:
+            with get_http_client_github(github_default.password) as client:
                 runs_data = get_resp_from_githubapi(client, url)
                 runs = get_list_of_runs(json.loads(runs_data))
                 valid_runs, skipped_runs = qualify_discovered_runs(runs)
@@ -46,23 +47,26 @@ with DAG(
         return {"run_list": run_list, "skipped": skipped}
 
     @task
+    def runs_to_upload(found: dict) -> list:
+        return found["run_list"]
+
+    @task
     def upload_run(run: GhWorkflowRun):
 
-        upload_json = Variable.get(
-            f"flakehunter_upload_{run.repository_owner}_{run.repository_name}", deserialize_json=True
+        connection = BaseHook.get_connection(
+            f"flakehunter_upload_{run.repository_owner}_{run.repository_name}"
         )
-
-        process_ghworkflowrun(run, upload_json.get("token"), upload_json.get("url"))
+        process_ghworkflowrun(run, connection.password, connection.host)
 
         return run
 
     @task
-    def summarize(uploaded: list[GhWorkflowRun], skipped: list[GhWorkflowRun]):
-        total = len(uploaded) + len(skipped)
+    def summarize(uploaded: list[GhWorkflowRun], is_found: dict):
+        total = len(uploaded) + len(is_found["skipped"])
         print(f"Summary total was {total}")
         return None
 
-
-found = discover_runs()
-uploaded = upload_run.expand(run=found["run_list"])
-summarize(uploaded, found["skipped"])
+    found = discover_runs()
+    to_upload = runs_to_upload(found)
+    uploaded = upload_run.expand(run=to_upload)
+    summarize(uploaded, found)
