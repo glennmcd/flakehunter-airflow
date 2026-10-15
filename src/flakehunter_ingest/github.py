@@ -110,6 +110,19 @@ def get_resp_from_githubapi(client: httpx.Client, url: str) -> str:
         return ""
 
 
+def qualify_discovered_runs(
+    runs: list[GhWorkflowRun],
+) -> tuple[list[GhWorkflowRun], list[GhWorkflowRun]]:
+    valid_runs = []
+    skipped_runs = []
+    for run in runs:
+        if is_run_trusted(run):
+            valid_runs.append(run)
+        else:
+            skipped_runs.append(run)
+    return valid_runs, skipped_runs
+
+
 def get_list_of_runs(gitHubResult: str) -> list[GhWorkflowRun]:
     # Placeholder implementation
     data = None
