@@ -10,6 +10,9 @@ mkdir -p "$AIRFLOW_HOME" "$AIRFLOW__CORE__DAGS_FOLDER"
 # In Codespaces the UI is reached through the forwarded URL, not localhost:8080.
 if [ -n "${CODESPACE_NAME:-}" ] && [ -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}" ]; then
   export AIRFLOW__API__BASE_URL="https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
+  # Task workers must reach the Execution API directly. Derived from base_url they would go
+  # through the forwarded URL, which requires GitHub sign-in, and every task call fails.
+  export AIRFLOW__CORE__EXECUTION_API_SERVER_URL="http://localhost:8080/execution/"
 fi
 
 # Already serving (e.g. a second window attached): nothing to do.

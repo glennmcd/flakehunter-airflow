@@ -5,7 +5,7 @@ import json
 # [START example_dynamic_task_mapping]
 from datetime import datetime
 
-from airflow.hooks.base import BaseHook
+from airflow.sdk import BaseHook
 from airflow.sdk import DAG, Variable, task
 
 from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
@@ -29,7 +29,8 @@ with DAG(
     def discover_runs():
         repos = Variable.get("flakehunter_repos", deserialize_json=True)
         github_default = BaseHook.get_connection("github_default").password
-
+        if not github_default:
+            raise Exception("github_default connection must have a password set")
         if repos == []:
             raise Exception("flakehunter_repos needs a list of owner/repos")
         run_list = []
@@ -37,7 +38,7 @@ with DAG(
         for a in repos:
             owner, repo = a.split("/")
             url = get_github_repo_run_url(owner, repo)
-            with get_http_client_github(github_default.password) as client:
+            with get_http_client_github(github_default) as client:
                 runs_data = get_resp_from_githubapi(client, url)
                 runs = get_list_of_runs(json.loads(runs_data))
                 valid_runs, skipped_runs = qualify_discovered_runs(runs)
