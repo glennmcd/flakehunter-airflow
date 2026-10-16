@@ -5,6 +5,7 @@ import random
 import string
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 
@@ -121,6 +122,30 @@ def qualify_discovered_runs(
         else:
             skipped_runs.append(run)
     return valid_runs, skipped_runs
+
+
+def validate_repos(repos_str: str) -> list[SimpleNamespace]:
+    try:
+        repos = json.loads(repos_str)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to decode repos JSON: {repos_str}")
+        logger.error(f"{e}")
+        return []
+
+    if not isinstance(repos, list):
+        logger.error(f"Repos should be a list: {repos}")
+        return []
+
+    validated_repos = []
+    for repo in repos:
+        if not isinstance(repo, str) or "/" not in repo:
+            logger.error(f"Invalid repo format: {repo}")
+            continue
+        adict = {"owner": repo.split("/")[0], "repo": repo.split("/")[1]}
+        owner_repo = SimpleNamespace(**adict)
+        validated_repos.append(owner_repo)
+
+    return validated_repos
 
 
 def get_list_of_runs(gitHubResult: str) -> list[GhWorkflowRun]:

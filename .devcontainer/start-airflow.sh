@@ -7,6 +7,10 @@ W=$(pwd)
 [ -x "$W/.venv/bin/airflow" ] || bash "$W/.devcontainer/install.sh"
 export AIRFLOW_HOME=$W/.airflow AIRFLOW__CORE__DAGS_FOLDER=$W/dags AIRFLOW__CORE__LOAD_EXAMPLES=False
 mkdir -p "$AIRFLOW_HOME" "$AIRFLOW__CORE__DAGS_FOLDER"
+# Tasks pass GhWorkflowRun through XCom; keep the airflow.* default in the list.
+export AIRFLOW__CORE__ALLOWED_DESERIALIZATION_CLASSES="airflow.* flakehunter_ingest.*"
+# Show Admin > Configuration in the UI, with sensitive values masked.
+export AIRFLOW__API__EXPOSE_CONFIG=True
 # In Codespaces the UI is reached through the forwarded URL, not localhost:8080.
 if [ -n "${CODESPACE_NAME:-}" ] && [ -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}" ]; then
   export AIRFLOW__API__BASE_URL="https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
