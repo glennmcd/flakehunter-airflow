@@ -1,11 +1,12 @@
 import os
 import zipfile
+from asyncio.log import logger
 from pathlib import Path
 
 from flakehunter_ingest.limits import MAX_FILE_COUNT, MAX_RATIO, MAX_TOTAL_SIZE
 
 
-def safe_zip_check_extract(zip_path: Path, extract_to: Path = Path(".")) -> None:
+def safe_zip_check_extract(zip_path: Path, target_dir: Path = Path(".")) -> None:
     with zipfile.ZipFile(zip_path, "r") as archive:
         total_uncompressed_size = 0
         total_compressed_size = 0
@@ -32,12 +33,13 @@ def safe_zip_check_extract(zip_path: Path, extract_to: Path = Path(".")) -> None
             if ratio > MAX_RATIO:
                 raise ValueError(f"Abnormal compression ratio ({ratio:.1f}). Potential ZIP bomb.")
 
-        safe_stream_extract(archive, extract_to, max_size=MAX_TOTAL_SIZE)
+        safe_stream_extract(archive, target_dir, max_size=MAX_TOTAL_SIZE)
 
 
 def safe_stream_extract(archive: zipfile.ZipFile, target_dir: Path, max_size=100_000_000):
     current_total_size = 0
     for member in archive.namelist():
+        member_size = 0
         # Target path safety check (Prevents ZipSlip / Directory Traversal)
         target_path = os.path.abspath(os.path.join(target_dir, member))
         if not target_path.startswith(os.path.abspath(target_dir)):
@@ -48,6 +50,7 @@ def safe_stream_extract(archive: zipfile.ZipFile, target_dir: Path, max_size=100
             # If it's a directory entry, create it and continue
             if member.endswith("/"):
                 os.makedirs(target_path, exist_ok=True)
+                logger.info(f"Created directory: {target_path}")
                 continue
 
             os.makedirs(os.path.dirname(target_path), exist_ok=True)
@@ -56,9 +59,17 @@ def safe_stream_extract(archive: zipfile.ZipFile, target_dir: Path, max_size=100
                     chunk = source_file.read(1024 * 64)  # 64 KB chunks
                     if not chunk:
                         break
+                    chunk_size = len(chunk)
 
-                    current_total_size += len(chunk)
+                    current_total_size += chunk_size
+                    member_size += chunk_size
                     if current_total_size > max_size:
                         raise ValueError("Extraction aborted: Exceeded maximum allowed size.")
 
                     target_file.write(chunk)
+        if member_size > 0:
+            logger.info(f"Extracted {member_size} bytes for member: {member}")
+    if current_total_size > 0:
+        logger.info(
+            f"Extraction completed successfully {current_total_size} bytes to: {target_dir}"
+        )

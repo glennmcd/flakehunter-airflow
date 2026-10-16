@@ -88,16 +88,7 @@ def get_http_client_github(token: str) -> httpx.Client:
         "Authorization": f"Bearer {token}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    return httpx.Client(headers=headers, timeout=10)
-
-
-def construct_http_client(url: str, token: str) -> httpx.Client:
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {token}",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    return httpx.Client(headers=headers, timeout=10, base_url=url)
+    return httpx.Client(headers=headers, timeout=10, follow_redirects=True)
 
 
 def get_resp_from_githubapi(client: httpx.Client, url: str) -> str:

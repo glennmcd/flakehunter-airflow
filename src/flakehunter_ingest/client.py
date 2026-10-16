@@ -55,6 +55,13 @@ class UploadResult:
     error_message: str | None = None
     request_id: str | None = None
 
+    def __str__(self) -> str:
+        return (
+            f"UploadResult(outcome={self.outcome} \n status_code={self.status_code} \n"
+            f"error_code={self.error_code} \n error_message={self.error_message}, \n"
+            f"request_id={self.request_id})"
+        )
+
 
 def make_client(base_url: str, token: str, *, timeout: float = 60.0) -> AuthenticatedClient:
     return AuthenticatedClient(

@@ -33,20 +33,21 @@ from flakehunter_ingest.junit import get_combined_artifact
 from flakehunter_ingest.safezip import safe_zip_check_extract
 
 
-def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str):
+def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str, github_pat: str):
 
-    artifactSpec = get_first_non_expired_artifact(run, uploadToken)
+    artifactSpec = get_first_non_expired_artifact(run, github_pat)
     if artifactSpec is None:
         logger.error(f"No non-expired artifact found for run: {run.artifacts_url}")
         return
+    logger.info(f"Found non-expired artifact for run: {run.artifacts_url}")
 
     zip_path: Path | None = None
-    with get_http_client_github(uploadToken) as client:
+    with get_http_client_github(github_pat) as client:
         zip_path = download_artifact(client, artifactSpec.archive_download_url)
         if not zip_path:
             logger.error(f"Failed to download artifact for run: {run.artifacts_url}")
             return
-
+    logger.info(f"Downloaded artifact to: {zip_path.resolve()}")
     output_dir = extract_artifact(zip_path, Path("extracted"))
 
     suites_file = construct_suites(output_dir)
@@ -71,6 +72,7 @@ def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str):
             logger.info(f"Successfully uploaded report for run: {run.artifacts_url}")
         else:
             logger.error(f"Failed to upload report for run: {run.artifacts_url}")
+            logger.error(f"upload_result: {upload_result}")
     except UploadError as e:
         logger.error(f"Upload error for run: {run.artifacts_url} - {e}")
 
@@ -89,14 +91,16 @@ def construct_suites(output_dir: Path) -> Path:
 
 
 def extract_artifact(zip_path: Path, extract_to: Path) -> Path:
-    output_dir = Path(os.path.splitext(os.path.basename(zip_path))[0]) / extract_to
-    safe_zip_check_extract(zip_path, extract_to)
+    output_dir = zip_path.parent / extract_to
+    # create directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    safe_zip_check_extract(zip_path, output_dir)
     return output_dir
 
 
-def get_first_non_expired_artifact(run: GhWorkflowRun, uploadToken: str) -> GhArtifactSpec | None:
+def get_first_non_expired_artifact(run: GhWorkflowRun, github_pat: str) -> GhArtifactSpec | None:
     artifacts: dict | None = None
-    with get_http_client_github(uploadToken) as client:
+    with get_http_client_github(github_pat) as client:
         response = get_resp_from_githubapi(client, run.artifacts_url)
         if response:
             try:
