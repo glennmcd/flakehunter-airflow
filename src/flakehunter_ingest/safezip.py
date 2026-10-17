@@ -30,6 +30,7 @@ def safe_zip_check_extract(zip_path: Path, target_dir: Path = Path(".")) -> None
         # 3. Check compression ratio (avoid division by zero)
         if total_compressed_size > 0:
             ratio = total_uncompressed_size / total_compressed_size
+            logger.info(f"Compression ratio: {ratio:.1f}")
             if ratio > MAX_RATIO:
                 raise ValueError(f"Abnormal compression ratio ({ratio:.1f}). Potential ZIP bomb.")
 
