@@ -11,9 +11,7 @@
 
 
 import json
-import os
 from asyncio.log import logger
-from pathlib import Path
 
 from flakehunter_ingest.client import (
     RunHeaders,
@@ -29,8 +27,8 @@ from flakehunter_ingest.github import (
     get_http_client_github,
     get_resp_from_githubapi,
 )
-from flakehunter_ingest.junit import get_combined_artifact
-from flakehunter_ingest.safezip import safe_zip_check_extract
+
+# from flakehunter_ingest.safezip import read_xml_entries
 
 
 def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str, github_pat: str):
@@ -41,17 +39,20 @@ def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str, 
         return
     logger.info(f"Found non-expired artifact for run: {run.artifacts_url}")
 
-    zip_path: Path | None = None
+    zip_bytes: bytes | None = None
     with get_http_client_github(github_pat) as client:
-        zip_path = download_artifact(client, artifactSpec.archive_download_url)
-        if not zip_path:
+        zip_bytes = download_artifact(client, artifactSpec.archive_download_url)
+        if not zip_bytes:
             logger.error(f"Failed to download artifact for run: {run.artifacts_url}")
             return
-    logger.info(f"Downloaded artifact to: {zip_path.resolve()}")
-    output_dir = extract_artifact(zip_path, Path("extracted"))
+    logger.info(f"Downloaded artifact, size: {len(zip_bytes)} bytes")
 
-    suites_file = construct_suites(output_dir)
-    suites_file_xml: bytes = suites_file.read_bytes()
+    # xml_data = read_xml_entries(zip_bytes)
+
+    # get_combined_artifact(xml_data)
+
+    # suites_file = construct_suites(xml_data)
+    suites_file_xml: bytes = b""
 
     # At this point, suites_file contains
     # the combined XML of all test suites extracted from the artifact.
@@ -75,27 +76,6 @@ def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str, 
             logger.error(f"upload_result: {upload_result}")
     except UploadError as e:
         logger.error(f"Upload error for run: {run.artifacts_url} - {e}")
-
-
-def construct_suites(output_dir: Path) -> Path:
-    xmlPaths: list[Path] = []
-    root_dir = Path(output_dir)
-    for path in root_dir.rglob("*.xml"):
-        if path.is_file():
-            print(f"File: {path}")
-            xmlPaths.append(path)
-
-    suites_path = output_dir.parent / "suites.xml"
-    get_combined_artifact(xmlPaths, suites_path)
-    return suites_path
-
-
-def extract_artifact(zip_path: Path, extract_to: Path) -> Path:
-    output_dir = zip_path.parent / extract_to
-    # create directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    safe_zip_check_extract(zip_path, output_dir)
-    return output_dir
 
 
 def get_first_non_expired_artifact(run: GhWorkflowRun, github_pat: str) -> GhArtifactSpec | None:

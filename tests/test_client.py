@@ -5,10 +5,10 @@ import pytest
 import respx
 
 from flakehunter_ingest.client import (
-    MAX_UNCOMPRESSED_BYTES,
     UploadError,
     upload_report,
 )
+from flakehunter_ingest.limits import MAX_REPORT_BYTES
 from tests.conftest import BASE
 
 URL = f"{BASE}/api/reports"
@@ -116,6 +116,6 @@ def test_timeout_propagates(client, headers):
 @respx.mock
 def test_oversize_rejected_locally(client, headers):
     route = respx.post(URL)
-    result = upload_report(client, b"x" * (MAX_UNCOMPRESSED_BYTES + 1), headers)
+    result = upload_report(client, b"x" * (MAX_REPORT_BYTES + 1), headers)
     assert result.outcome == "rejected"
     assert not route.called

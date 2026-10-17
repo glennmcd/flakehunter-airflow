@@ -22,9 +22,9 @@ from flakehunter_ingest._api.models.post_api_reports_content_encoding import (
     PostApiReportsContentEncoding,
 )
 from flakehunter_ingest._api.types import UNSET, File
+from flakehunter_ingest.limits import MAX_REPORT_BYTES
 
 REPORT_KEY = "webhook-artifact"
-MAX_UNCOMPRESSED_BYTES = 11_534_336
 MAX_RATE_LIMIT_RETRIES = 3
 DEFAULT_RETRY_AFTER_SECONDS = 5.0
 
@@ -76,11 +76,11 @@ def upload_report(
     *,
     sleep: Callable[[float], None] = time.sleep,
 ) -> UploadResult:
-    if len(xml) > MAX_UNCOMPRESSED_BYTES:
+    if len(xml) > MAX_REPORT_BYTES:
         return UploadResult(
             "rejected",
             error_code="too_large_local",
-            error_message=f"merged report is {len(xml)} bytes, limit {MAX_UNCOMPRESSED_BYTES}",
+            error_message=f"merged report is {len(xml)} bytes, limit {MAX_REPORT_BYTES}",
         )
 
     body = gzip.compress(xml)

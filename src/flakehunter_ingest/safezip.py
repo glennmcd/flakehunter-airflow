@@ -1,9 +1,34 @@
+import io
 import os
 import zipfile
 from asyncio.log import logger
 from pathlib import Path
 
-from flakehunter_ingest.limits import MAX_FILE_COUNT, MAX_RATIO, MAX_TOTAL_SIZE
+from flakehunter_ingest.limits import MAX_REPORT_BYTES, MAX_ZIP_ENTRIES, ArtifactRejected
+
+CHUNK_LIMIT = 64 * 1024  # 64 KB chunks
+
+
+def read_xml_entries(zip_bytes: bytes) -> dict[str, bytes]:
+    xml_entries: dict[str, bytes] = {}
+    total = 0
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as archive:
+        for file_info in archive.infolist():
+            chunks = []
+            if file_info.is_dir() or not file_info.filename.lower().endswith(".xml"):
+                continue
+            running_total = 0
+            with archive.open(file_info) as file:
+                # := checks for non-empty chunk, Read in 64 KB chunks
+                while chunk := file.read(CHUNK_LIMIT):
+                    running_total += len(chunk)
+                    total += len(chunk)
+                    if total > MAX_REPORT_BYTES:
+                        raise ArtifactRejected("artifact XML exceeds the size limit")
+                    chunks.append(chunk)
+            xml_entries[file_info.filename] = b"".join(chunks)
+
+    return xml_entries
 
 
 def safe_zip_check_extract(zip_path: Path, target_dir: Path = Path(".")) -> None:
@@ -12,7 +37,7 @@ def safe_zip_check_extract(zip_path: Path, target_dir: Path = Path(".")) -> None
         total_compressed_size = 0
 
         # 1. Check total number of files
-        if len(archive.infolist()) > MAX_FILE_COUNT:
+        if len(archive.infolist()) > MAX_ZIP_ENTRIES:
             raise ValueError("Too many files in archive. Potential ZIP bomb.")
 
         for file_info in archive.infolist():
@@ -24,17 +49,17 @@ def safe_zip_check_extract(zip_path: Path, target_dir: Path = Path(".")) -> None
                 raise ValueError("Nested archives are not allowed.")
 
         # 2. Check cumulative uncompressed file size
-        if total_uncompressed_size > MAX_TOTAL_SIZE:
+        if total_uncompressed_size > MAX_REPORT_BYTES:
             raise ValueError("Uncompressed data size exceeds the safe threshold.")
 
         # 3. Check compression ratio (avoid division by zero)
         if total_compressed_size > 0:
             ratio = total_uncompressed_size / total_compressed_size
             logger.info(f"Compression ratio: {ratio:.1f}")
-            if ratio > MAX_RATIO:
+            if ratio > 100:
                 raise ValueError(f"Abnormal compression ratio ({ratio:.1f}). Potential ZIP bomb.")
 
-        safe_stream_extract(archive, target_dir, max_size=MAX_TOTAL_SIZE)
+        safe_stream_extract(archive, target_dir, max_size=MAX_REPORT_BYTES)
 
 
 def safe_stream_extract(archive: zipfile.ZipFile, target_dir: Path, max_size=100_000_000):

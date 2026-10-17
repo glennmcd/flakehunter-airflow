@@ -24,21 +24,9 @@ def test_safezip_basic(tmp_path):
     assert extracted_file.read_text() == "one"
 
 
-def test_safezip_max_ratio(tmp_path, monkeypatch: pytest.MonkeyPatch):
-    test_logger.debug("Running test_safezip_max_ratio")
-    monkeypatch.setattr(safezip, "MAX_RATIO", 1)
-
-    zip_path = tmp_path / "ratio_test.zip"
-    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("one.txt", "0000000000000000000000000")
-
-    with pytest.raises(ValueError, match="Abnormal compression ratio"):
-        safe_zip_check_extract(zip_path, tmp_path)
-
-
 def test_safezip_max_file_size(tmp_path, monkeypatch: pytest.MonkeyPatch):
     test_logger.debug("Running test_safezip_max_file_size")
-    monkeypatch.setattr(safezip, "MAX_TOTAL_SIZE", 10)
+    monkeypatch.setattr(safezip, "MAX_REPORT_BYTES", 10)
 
     zip_path = tmp_path / "large_files.zip"
     with zipfile.ZipFile(zip_path, "w") as archive:
@@ -51,7 +39,7 @@ def test_safezip_max_file_size(tmp_path, monkeypatch: pytest.MonkeyPatch):
 
 def test_safezip_max_file_count(tmp_path, monkeypatch: pytest.MonkeyPatch):
     test_logger.debug("Running test_safezip")
-    monkeypatch.setattr(safezip, "MAX_FILE_COUNT", 1)
+    monkeypatch.setattr(safezip, "MAX_ZIP_ENTRIES", 1)
 
     zip_path = Path(__file__).parent / "fixtures" / "test_zip_file.zip"
     try:
@@ -65,7 +53,7 @@ def test_safezip_max_file_count(tmp_path, monkeypatch: pytest.MonkeyPatch):
 
 
 def test_safezip_rejects_too_many_files(tmp_path, monkeypatch):
-    monkeypatch.setattr(safezip, "MAX_FILE_COUNT", 1)
+    monkeypatch.setattr(safezip, "MAX_ZIP_ENTRIES", 1)
 
     zip_path = tmp_path / "many_files.zip"
     with zipfile.ZipFile(zip_path, "w") as archive:

@@ -4,12 +4,12 @@ import os
 import random
 import string
 import tempfile
-from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
 
 from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
+from flakehunter_ingest.limits import MAX_ARTIFACT_ZIP_BYTES, ArtifactRejected
 from flakehunter_ingest.trust import is_run_trusted
 
 logger = logging.getLogger(__name__)
@@ -20,24 +20,30 @@ class GitHubRunData:
         self.run = run
 
 
-def download_artifact(client: httpx.Client, zip_url: str) -> Path | None:
-    # Placeholder implementation
-    # Placeholder for actual download logic
-    logger.info(f"Downloading artifact from {zip_url}")
-    # get random filename for download
-    root_temp_dir = tempfile.mkdtemp(prefix="fh_scratch")
-    artifact_path = Path(root_temp_dir) / "artifact.zip"
+def download_artifact(client: httpx.Client, zip_url: str) -> bytes | None:
 
     try:
-        response = client.get(zip_url)
-        response.raise_for_status()
-        with open(artifact_path, "wb") as f:
-            f.write(response.content)
+        buffer: bytes = b""
+        with client.stream("GET", zip_url, follow_redirects=True) as response:
+            content_length = response.headers.get("Content-Length")
+            if content_length is not None:
+                content_length = int(content_length)
+                if content_length > MAX_ARTIFACT_ZIP_BYTES:
+                    raise ArtifactRejected()
+            running_total = 0
+            for chunk in response.iter_bytes():
+                running_total += len(chunk)
+                if running_total > MAX_ARTIFACT_ZIP_BYTES:
+                    raise ArtifactRejected()
+                buffer += chunk
+
+            return buffer
+
     except httpx.HTTPError as e:
         logger.error(f"Failed to download artifact zip: {zip_url} {e}")
         return None
 
-    return artifact_path or None
+    return None
 
 
 def download_first_unexpired_artifact(fixture: dict) -> str:
