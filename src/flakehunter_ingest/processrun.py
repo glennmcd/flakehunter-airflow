@@ -55,10 +55,10 @@ def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str, 
             logger.info(f"Downloaded artifact, size: {len(zip_bytes)} bytes")
 
         xml_data = read_xml_entries(zip_bytes)
+        suites_file_xml = merge_junit(xml_data)
     except ArtifactRejected as e:
         logger.error(f"Artifact rejected for run {run.id}: {e}")
         return
-    suites_file_xml = merge_junit(xml_data)
 
     # At this point, suites_file contains
     # the combined XML of all test suites extracted from the artifact.

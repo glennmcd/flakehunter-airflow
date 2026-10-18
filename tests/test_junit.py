@@ -3,7 +3,10 @@ import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
+
 from flakehunter_ingest.junit import merge_junit
+from flakehunter_ingest.limits import ArtifactRejected
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
@@ -29,6 +32,62 @@ test_logger = logging.getLogger(__name__)
 #       test for parsing required fields
 #       test for irregular values in required fields
 #   test handling of missing fields
+
+
+def test_extract_junit_bare_root():
+
+    f1 = b"""<testsuite name="bare-root"></testsuite>"""
+    expected_result = (
+        b"<?xml version='1.0' encoding='utf-8'?>\n"
+        + b'<testsuites name="dag combined"><testsuite name="bare-root" /></testsuites>'
+    )
+
+    merge_junit_result = merge_junit({"junit.xml": f1})
+    assert merge_junit_result == expected_result
+
+
+def test_extract_junit_nested_root():
+    f1 = (
+        b"""<testsuites><testsuite name="nested-root"><testsuite name="nested-root1"/>"""
+        + b"""</testsuite></testsuites>"""
+    )
+    expected_result = (
+        b"<?xml version='1.0' encoding='utf-8'?>\n"
+        + b'<testsuites name="dag combined">'
+        + b'<testsuite name="nested-root"><testsuite name="nested-root1" />'
+        + b"</testsuite></testsuites>"
+    )
+
+    merge_junit_result = merge_junit({"junit.xml": f1})
+    assert merge_junit_result == expected_result
+
+
+def test_extract_junit_big_testcases():
+    big_cases = b"".join(b'<testcase classname="Big" name="t%d" />' % i for i in range(5000))
+    big = (
+        b'<testsuites name="dag combined"><testsuite name="big">'
+        + big_cases
+        + b"</testsuite></testsuites>"
+    )
+    expected_result = b"<?xml version='1.0' encoding='utf-8'?>\n" + big
+
+    merge_junit_result = merge_junit({"junit.xml": big})
+    assert merge_junit_result == expected_result
+
+
+def test_extract_junit_invalid_xml():
+    f1 = b"""invalid></invalid>"""
+
+    with pytest.raises(ArtifactRejected):
+        merge_junit({"junit.xml": f1})
+
+
+def test_extract_junit_one_xml():
+
+    f1 = b"""<testsuite name="bare-root"></testsuite>"""
+
+    merge_junit_result = merge_junit({"junit.xml": f1})
+    assert merge_junit_result.count(b"<?xml") == 1
 
 
 def test_extract_junit_combined():

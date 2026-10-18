@@ -11,7 +11,6 @@ import respx
 from flakehunter_ingest import github
 from flakehunter_ingest.github import (
     download_artifact,
-    download_first_unexpired_artifact,
     get_github_repo_run_url,
     get_http_client_github,
     get_list_of_runs,
@@ -95,22 +94,6 @@ def test_content_returns_404():
     respx.get("https://example.com/artifacts").mock(return_value=httpx.Response(404))
     with get_http_client_github("dev_token") as client:
         assert download_artifact(client, "https://example.com/artifacts") is None
-
-
-@respx.mock
-def test_github_download_zip():
-    fixture_path = Path(__file__).parent / "fixtures" / "artifact_spec.json"
-    zip_path = Path(__file__).parent / "fixtures" / "github_artifact.zip"
-    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
-    url = fixture["artifacts"][0]["archive_download_url"]
-    streamData = zip_path.read_bytes()
-    respx.get(url).mock(return_value=httpx.Response(200, content=streamData))
-    result = download_first_unexpired_artifact(fixture)
-    assert result
-    assert Path(result).exists()
-    # Clean up the downloaded file
-    if result and Path(result).exists():
-        Path(result).unlink()
 
 
 @respx.mock

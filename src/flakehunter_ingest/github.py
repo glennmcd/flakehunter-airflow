@@ -1,9 +1,5 @@
 import json
 import logging
-import os
-import random
-import string
-import tempfile
 from types import SimpleNamespace
 
 import httpx
@@ -50,44 +46,6 @@ def download_artifact(client: httpx.Client, zip_url: str) -> bytes | None:
         logger.error(f"Failed to download artifact zip: {e.response.status_code}")
 
     return None
-
-
-def download_first_unexpired_artifact(fixture: dict) -> str:
-    # Placeholder implementation
-    if "artifacts" in fixture and fixture["artifacts"]:
-        first = next((x for x in fixture["artifacts"] if not x.get("expired", False)), None)
-        if first is None:
-            logger.error("No unexpired artifacts found.")
-            return ""
-        zip_url = first.get("archive_download_url")
-        if not zip_url:
-            logger.error("No download URL found for the first unexpired artifact.")
-            return ""
-        # Placeholder for actual download logic
-        logger.info(f"Downloading artifact from {zip_url}")
-        # get random filename for download
-        suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=10))
-        random_filename = f"archive_{suffix}.zip"
-        temp_dir = tempfile.gettempdir()
-        fixture_path = os.path.join(temp_dir, random_filename)
-        YOUR_GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {YOUR_GITHUB_TOKEN}",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
-        try:
-            with httpx.Client(headers=headers, timeout=20, follow_redirects=True) as client:
-                response = client.get(zip_url)
-                response.raise_for_status()
-                with open(fixture_path, "wb") as f:
-                    f.write(response.content)
-        except httpx.HTTPError as e:
-            logger.error(f"Failed to download artifact zip: {e}")
-            return ""
-
-        return fixture_path
-    return ""
 
 
 def get_github_repo_run_url(repo_owner: str, repo_name: str) -> str:
