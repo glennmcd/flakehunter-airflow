@@ -7,6 +7,7 @@ import pytest
 
 from flakehunter_ingest.junit import merge_junit
 from flakehunter_ingest.limits import ArtifactRejected
+from flakehunter_ingest.safezip import read_xml_entries
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
@@ -88,6 +89,20 @@ def test_extract_junit_one_xml():
 
     merge_junit_result = merge_junit({"junit.xml": f1})
     assert merge_junit_result.count(b"<?xml") == 1
+
+
+def test_fixture_artifact_end_to_end():
+    """The fixture repo's four-file artifact: three JUnit shapes plus a non-XML file."""
+    zip_bytes = (Path(__file__).parent / "fixtures" / "github_artifact2.zip").read_bytes()
+
+    files = read_xml_entries(zip_bytes)
+    assert sorted(files) == ["flaky.xml", "legacy-testsuite.xml", "unit/math.xml"]
+
+    cases_in = sum(len(ET.fromstring(xml).findall(".//testcase")) for xml in files.values())
+    merged = ET.fromstring(merge_junit(files))
+    assert merged.tag == "testsuites"
+    assert len(merged.findall(".//testcase")) == cases_in == 6
+    assert merged.find("testsuite[@name='com.example.LegacySuite']") is not None
 
 
 def test_extract_junit_combined():

@@ -89,6 +89,16 @@ def test_content_body_too_large(monkeypatch: pytest.MonkeyPatch):
 
 
 @respx.mock
+def test_content_length_invalid_is_ignored():
+    body = b"zip bytes"
+    respx.get("https://example.com/artifacts").mock(
+        return_value=httpx.Response(200, content=body, headers={"Content-Length": "abc"})
+    )
+    with get_http_client_github("dev_token") as client:
+        assert download_artifact(client, "https://example.com/artifacts") == body
+
+
+@respx.mock
 def test_content_returns_404():
 
     respx.get("https://example.com/artifacts").mock(return_value=httpx.Response(404))
