@@ -14,7 +14,7 @@ def main() -> int:
         "Authorization": f"Bearer {YOUR_GITHUB_TOKEN}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    
+
     with httpx.Client(headers=headers, timeout=10) as client:
         response = client.get(url)
         response.raise_for_status()
