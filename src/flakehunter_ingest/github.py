@@ -23,25 +23,33 @@ class GitHubRunData:
 def download_artifact(client: httpx.Client, zip_url: str) -> bytes | None:
 
     try:
-        buffer: bytes = b""
         with client.stream("GET", zip_url, follow_redirects=True) as response:
+            response.raise_for_status()  # Raise an exception if the HTTP request failed
             content_length = response.headers.get("Content-Length")
             if content_length is not None:
                 content_length = int(content_length)
                 if content_length > MAX_ARTIFACT_ZIP_BYTES:
-                    raise ArtifactRejected()
+                    raise ArtifactRejected(
+                        "Artifact exceeds maximum allowed \
+                        size in content-length header"
+                    )
             running_total = 0
+            chunks = []
             for chunk in response.iter_bytes():
                 running_total += len(chunk)
                 if running_total > MAX_ARTIFACT_ZIP_BYTES:
-                    raise ArtifactRejected()
-                buffer += chunk
+                    raise ArtifactRejected("Artifact exceeds maximum allowed size in file stream")
+                chunks.append(chunk)
 
-            return buffer
+            return b"".join(chunks)
 
-    except httpx.HTTPError as e:
-        logger.error(f"Failed to download artifact zip: {zip_url} {e}")
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Failed to download artifact zip: {e.response.status_code}")
         return None
+    except ArtifactRejected as e:
+        logger.error(f"Artifact rejected: {e.args[0]}")
+    except ValueError as e:
+        logger.error(f"Value error while downloading artifact zip: {e}")
 
     return None
 
@@ -77,7 +85,7 @@ def download_first_unexpired_artifact(fixture: dict) -> str:
                 with open(fixture_path, "wb") as f:
                     f.write(response.content)
         except httpx.HTTPError as e:
-            logger.error(f"Failed to download artifact zip: {zip_url} {e}")
+            logger.error(f"Failed to download artifact zip: {e}")
             return ""
 
         return fixture_path

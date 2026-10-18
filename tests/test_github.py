@@ -1,11 +1,16 @@
+import io
 import json
 import logging
+import zipfile
 from pathlib import Path
 
 import httpx
+import pytest
 import respx
 
+from flakehunter_ingest import github
 from flakehunter_ingest.github import (
+    download_artifact,
     download_first_unexpired_artifact,
     get_github_repo_run_url,
     get_http_client_github,
@@ -37,6 +42,47 @@ test_logger = logging.getLogger(__name__)
 #       test for parsing required fields
 #       test for irregular values in required fields
 #   test handling of missing fields
+
+
+@respx.mock
+def test_content_length_too_large(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(github, "MAX_ARTIFACT_ZIP_BYTES", 1)
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zip_file:
+        zip_file.writestr("test.xml", "<testsuite></testsuite>")
+    buffer.seek(0)
+
+    headers = {"Content-Length": str(buffer.getbuffer().nbytes)}
+    respx.get("https://example.com/artifacts").mock(
+        return_value=httpx.Response(200, content=buffer.getvalue(), headers=headers)
+    )
+    with get_http_client_github("dev_token") as client:
+        assert download_artifact(client, "https://example.com/artifacts") is None
+
+
+@respx.mock
+def test_content_body_too_large(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(github, "MAX_ARTIFACT_ZIP_BYTES", 1)
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zip_file:
+        zip_file.writestr("test.xml", "<testsuite></testsuite>")
+    buffer.seek(0)
+
+    respx.get("https://example.com/artifacts").mock(
+        return_value=httpx.Response(200, content=buffer.getvalue())
+    )
+    with get_http_client_github("dev_token") as client:
+        assert download_artifact(client, "https://example.com/artifacts") is None
+
+
+@respx.mock
+def test_content_returns_404():
+
+    respx.get("https://example.com/artifacts").mock(return_value=httpx.Response(404))
+    with get_http_client_github("dev_token") as client:
+        assert download_artifact(client, "https://example.com/artifacts") is None
 
 
 @respx.mock

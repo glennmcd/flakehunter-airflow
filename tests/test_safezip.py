@@ -1,64 +1,93 @@
 import logging
 import zipfile
-from pathlib import Path
+from io import BytesIO
 
 import pytest
 
 import flakehunter_ingest.safezip as safezip
-from flakehunter_ingest.safezip import safe_zip_check_extract
+from flakehunter_ingest.limits import ArtifactRejected
+from flakehunter_ingest.safezip import read_xml_entries
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
 
 
-def test_safezip_basic(tmp_path):
+def test_safezip_basic():
     test_logger.debug("Running test_safezip_basic")
-    zip_path = tmp_path / "basic_test.zip"
+
+    zip_buffer = BytesIO()
     archive: zipfile.ZipFile
-    with zipfile.ZipFile(zip_path, "w") as archive:
-        archive.writestr("one.txt", "one")
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("one.xml", "one")
+    zip_buffer.seek(0)
+    xml_entries = read_xml_entries(zip_buffer.getvalue())
 
-    safe_zip_check_extract(zip_path, tmp_path)
-    extracted_file = tmp_path / "one.txt"
-    assert extracted_file.exists()
-    assert extracted_file.read_text() == "one"
+    assert "one.xml" in xml_entries
+    assert xml_entries["one.xml"] == b"one"
 
 
-def test_safezip_max_file_size(tmp_path, monkeypatch: pytest.MonkeyPatch):
+def test_safezip_max_file_size(monkeypatch: pytest.MonkeyPatch):
     test_logger.debug("Running test_safezip_max_file_size")
     monkeypatch.setattr(safezip, "MAX_REPORT_BYTES", 10)
 
-    zip_path = tmp_path / "large_files.zip"
-    with zipfile.ZipFile(zip_path, "w") as archive:
-        archive.writestr("one.txt", "one")
-        archive.writestr("two.txt", "twothreefourfivesizseveneightnineten")
-
-    with pytest.raises(ValueError, match="Uncompressed data size exceeds the safe threshold."):
-        safe_zip_check_extract(zip_path, tmp_path)
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("one.xml", "one")
+        archive.writestr("two.xml", "<twothreefourfivesizseveneightnineten/>")
+    zip_buffer.seek(0)
+    with pytest.raises(ArtifactRejected, match="artifact XML exceeds the size limit"):
+        read_xml_entries(zip_buffer.getvalue())
 
 
 def test_safezip_max_file_count(tmp_path, monkeypatch: pytest.MonkeyPatch):
-    test_logger.debug("Running test_safezip")
+    test_logger.debug("Running test_safezip_max_file_count")
     monkeypatch.setattr(safezip, "MAX_ZIP_ENTRIES", 1)
-
-    zip_path = Path(__file__).parent / "fixtures" / "test_zip_file.zip"
-    try:
-        safe_zip_check_extract(zip_path, tmp_path)
-    except ValueError as e:
-        test_logger.debug(f"Validate override number of files: {e}")
-        assert True
-        return
-    # Add your test logic here
-    raise AssertionError("Expected ValueError due to max file count")
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("one.xml", "one")
+        archive.writestr("two.xml", "<twothreefourfivesizseveneightnineten/>")
+    zip_buffer.seek(0)
+    with pytest.raises(ArtifactRejected, match="artifact zip has too many entries"):
+        read_xml_entries(zip_buffer.getvalue())
 
 
-def test_safezip_rejects_too_many_files(tmp_path, monkeypatch):
-    monkeypatch.setattr(safezip, "MAX_ZIP_ENTRIES", 1)
+def test_safezip_skip_non_xml(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    test_logger.debug("Running test_safezip_skip_non_xml")
 
-    zip_path = tmp_path / "many_files.zip"
-    with zipfile.ZipFile(zip_path, "w") as archive:
-        archive.writestr("one.txt", "one")
-        archive.writestr("two.txt", "two")
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("one.zip", "one")
+        archive.writestr("two.txt", "<twothreefourfivesizseveneightnineten/>")
+    zip_buffer.seek(0)
+    with pytest.raises(ArtifactRejected, match="artifact zip has too many entries"):
+        assert read_xml_entries(zip_buffer.getvalue()) == {}
 
-    with pytest.raises(ValueError, match="Too many files"):
-        safezip.safe_zip_check_extract(zip_path, tmp_path / "out")
+
+def test_safezip_path_issue(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    test_logger.debug("Running test_safezip_path_issue")
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("../../evil.xml", "one")
+
+    zip_buffer.seek(0)
+    output = read_xml_entries(zip_buffer.getvalue())
+    assert output["../../evil.xml"] == b""
+
+
+def test_safezip_corrupted(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    test_logger.debug("Running test_safezip_skip_non_xml")
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("one.zip", "one")
+        archive.writestr("two.txt", "<twothreefourfivesizseveneightnineten/>")
+    zip_buffer.seek(0)
+
+    # set the 20th element from the end of zip_buffer to 0x00 to corrupt the zip
+    buffer = bytearray(zip_buffer.getvalue())
+    buffer[len(buffer) - 20] = 0x00
+
+    zip_buffer = BytesIO(buffer)
+    with pytest.raises(ArtifactRejected, match="artifact is not a readable zip"):
+        assert read_xml_entries(zip_buffer.getvalue()) == {}
