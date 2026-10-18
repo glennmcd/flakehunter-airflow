@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 
 from attrs import define as _attrs_define
-from typing_extensions import Self
 
 from ..models.get_api_tests_id_history_response_200_data_item_status import (
     GetApiTestsIdHistoryResponse200DataItemStatus,

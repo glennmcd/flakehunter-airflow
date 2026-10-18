@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypeVar
 
 from attrs import define as _attrs_define
-from typing_extensions import Self
 
 if TYPE_CHECKING:
     from ..models.get_api_repos_response_200_data_item import (
@@ -51,9 +50,7 @@ class GetApiReposResponse200:
         from ..models.get_api_repos_response_200_data_item import (
             GetApiReposResponse200DataItem,
         )
-        from ..models.get_api_repos_response_200_page import (
-            GetApiReposResponse200Page,
-        )
+        from ..models.get_api_repos_response_200_page import GetApiReposResponse200Page
 
         d = dict(src_dict)
         data = []
