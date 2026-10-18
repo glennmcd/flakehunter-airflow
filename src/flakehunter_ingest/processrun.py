@@ -28,7 +28,7 @@ from flakehunter_ingest.github import (
     get_resp_from_githubapi,
 )
 from flakehunter_ingest.junit import merge_junit
-from flakehunter_ingest.limits import MAX_ARTIFACT_ZIP_BYTES
+from flakehunter_ingest.limits import MAX_ARTIFACT_ZIP_BYTES, ArtifactRejected
 from flakehunter_ingest.safezip import read_xml_entries
 
 logger = logging.getLogger(__name__)
@@ -45,14 +45,19 @@ def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str, 
         logger.error(f"Artifact too large for run {run.id}")
         return
     zip_bytes: bytes | None = None
-    with get_http_client_github(github_pat) as client:
-        zip_bytes = download_artifact(client, artifactSpec.archive_download_url)
-        if not zip_bytes:
-            logger.error(f"Failed to download artifact for run: {run.artifacts_url}")
-            return
-    logger.info(f"Downloaded artifact, size: {len(zip_bytes)} bytes")
+    xml_data: dict[str, bytes]
+    try:
+        with get_http_client_github(github_pat) as client:
+            zip_bytes = download_artifact(client, artifactSpec.archive_download_url)
+            if not zip_bytes:
+                logger.error(f"Failed to download artifact for run: {run.artifacts_url}")
+                return
+            logger.info(f"Downloaded artifact, size: {len(zip_bytes)} bytes")
 
-    xml_data = read_xml_entries(zip_bytes)
+        xml_data = read_xml_entries(zip_bytes)
+    except ArtifactRejected as e:
+        logger.error(f"Artifact rejected for run {run.id}: {e}")
+        return
     suites_file_xml = merge_junit(xml_data)
 
     # At this point, suites_file contains

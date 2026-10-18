@@ -17,6 +17,7 @@ from flakehunter_ingest.github import (
     get_list_of_runs,
     get_resp_from_githubapi,
 )
+from flakehunter_ingest.limits import ArtifactRejected
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
@@ -57,8 +58,14 @@ def test_content_length_too_large(monkeypatch: pytest.MonkeyPatch):
     respx.get("https://example.com/artifacts").mock(
         return_value=httpx.Response(200, content=buffer.getvalue(), headers=headers)
     )
-    with get_http_client_github("dev_token") as client:
-        assert download_artifact(client, "https://example.com/artifacts") is None
+    with (
+        pytest.raises(
+            ArtifactRejected,
+            match="Artifact exceeds maximum allowed size in content-length header",
+        ),
+        get_http_client_github("dev_token") as client,
+    ):
+        download_artifact(client, "https://example.com/artifacts")
 
 
 @respx.mock
@@ -69,12 +76,17 @@ def test_content_body_too_large(monkeypatch: pytest.MonkeyPatch):
     with zipfile.ZipFile(buffer, "w") as zip_file:
         zip_file.writestr("test.xml", "<testsuite></testsuite>")
     buffer.seek(0)
-
     respx.get("https://example.com/artifacts").mock(
-        return_value=httpx.Response(200, content=buffer.getvalue())
+        return_value=httpx.Response(200, stream=httpx.ByteStream(buffer.getvalue())),
     )
-    with get_http_client_github("dev_token") as client:
-        assert download_artifact(client, "https://example.com/artifacts") is None
+    with (
+        pytest.raises(
+            ArtifactRejected,
+            match="Artifact exceeds maximum allowed size in file stream",
+        ),
+        get_http_client_github("dev_token") as client,
+    ):
+        download_artifact(client, "https://example.com/artifacts")
 
 
 @respx.mock
@@ -123,68 +135,3 @@ def test_returns_list_of_runs():
     list_of_runs = get_list_of_runs(strData)
     assert isinstance(list_of_runs, list)
     assert len(list_of_runs) == 10
-
-
-# def test_runs_have_required_fields():
-#     fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-#     strData = fixture_path.read_text(encoding="utf-8")
-#     list_of_runs = get_list_of_runs(strData)
-#     assert isinstance(list_of_runs, list)
-#     assert len(list_of_runs) == 10
-#     for run in list_of_runs:
-#         assert required_fields_exists(run) is True
-
-
-# def test_required_fields_exists():
-#     run = {
-#         "id": 1,
-#         "head_repository": {"full_name": "owner/repo"},
-#         "run_attempt": 1,
-#         "head_sha": "abc123",
-#         "head_branch": "main",
-#         "name": "test",
-#         "run_started_at": "2024-06-01T00:00:00Z",
-#         "artifacts_url": "https://example.com/artifacts",
-#         "event": "push",
-#     }
-#     assert required_fields_exists(run) is True
-
-
-# def test_parsing_of_required_fields():
-#     fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-#     data = json.loads(fixture_path.read_text(encoding="utf-8"))
-#     parsed_result = "{}"
-
-#     assert "id" in parsed_result
-#     assert "head_repository" in parsed_result
-#     assert "full_name" in parsed_result["head_repository"]
-
-
-# def test_handling_of_missing_fields():
-#     result = {}
-#     assert "id" not in result
-#     assert "head_repository" not in result
-#     assert "full_name" not in result
-#     assert "run_attempt" not in result
-#     assert "head_sha" not in result
-#     assert "head_branch" not in result
-#     assert "name" not in result
-#     assert "run_started_at" not in result
-#     assert "webhook-artifact" not in result
-#     assert "always" not in result
-
-# def test_get_fixture():
-#     url = f"https://api.github.com/repos/gmcdonald/flakehunter-test-fixture/actions/runs"
-
-#     headers = {
-#         "Accept": "application/vnd.github+json",
-#         "Authorization": f"Bearer dev_token",
-#         "X-GitHub-Api-Version": "2022-11-28",
-#     }
-
-#     with httpx.Client(headers=headers,timeout=10) as client:
-#         response = client.get(url)
-#         response.raise_for_status()
-#         data = response.json()
-#         fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
-#         fixture_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")

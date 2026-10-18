@@ -23,15 +23,18 @@ class GitHubRunData:
 def download_artifact(client: httpx.Client, zip_url: str) -> bytes | None:
 
     try:
-        with client.stream("GET", zip_url, follow_redirects=True) as response:
+        with client.stream("GET", zip_url) as response:
             response.raise_for_status()  # Raise an exception if the HTTP request failed
             content_length = response.headers.get("Content-Length")
             if content_length is not None:
-                content_length = int(content_length)
-                if content_length > MAX_ARTIFACT_ZIP_BYTES:
+                try:
+                    content_length = int(content_length)
+                except ValueError:
+                    logger.warning("Invalid content-length header - ignoring")
+                    content_length = None
+                if content_length is not None and content_length > MAX_ARTIFACT_ZIP_BYTES:
                     raise ArtifactRejected(
-                        "Artifact exceeds maximum allowed \
-                        size in content-length header"
+                        "Artifact exceeds maximum allowed size in content-length header"
                     )
             running_total = 0
             chunks = []
@@ -45,11 +48,6 @@ def download_artifact(client: httpx.Client, zip_url: str) -> bytes | None:
 
     except httpx.HTTPStatusError as e:
         logger.error(f"Failed to download artifact zip: {e.response.status_code}")
-        return None
-    except ArtifactRejected as e:
-        logger.error(f"Artifact rejected: {e.args[0]}")
-    except ValueError as e:
-        logger.error(f"Value error while downloading artifact zip: {e}")
 
     return None
 

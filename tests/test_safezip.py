@@ -39,7 +39,20 @@ def test_safezip_max_file_size(monkeypatch: pytest.MonkeyPatch):
         read_xml_entries(zip_buffer.getvalue())
 
 
-def test_safezip_max_file_count(tmp_path, monkeypatch: pytest.MonkeyPatch):
+def test_safezip_two_part_file(monkeypatch: pytest.MonkeyPatch):
+    test_logger.debug("Running test_safezip_two_part_file")
+    monkeypatch.setattr(safezip, "MAX_REPORT_BYTES", 10)
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("one.xml", "123456")
+        archive.writestr("two.xml", "789012")
+    zip_buffer.seek(0)
+    with pytest.raises(ArtifactRejected, match="artifact XML exceeds the size limit"):
+        read_xml_entries(zip_buffer.getvalue())
+
+
+def test_safezip_max_file_count(monkeypatch: pytest.MonkeyPatch):
     test_logger.debug("Running test_safezip_max_file_count")
     monkeypatch.setattr(safezip, "MAX_ZIP_ENTRIES", 1)
     zip_buffer = BytesIO()
@@ -51,43 +64,75 @@ def test_safezip_max_file_count(tmp_path, monkeypatch: pytest.MonkeyPatch):
         read_xml_entries(zip_buffer.getvalue())
 
 
-def test_safezip_skip_non_xml(tmp_path, monkeypatch: pytest.MonkeyPatch):
+def test_safezip_skip_non_xml():
     test_logger.debug("Running test_safezip_skip_non_xml")
 
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w") as archive:
         archive.writestr("one.zip", "one")
         archive.writestr("two.txt", "<twothreefourfivesizseveneightnineten/>")
+        archive.writestr("three.xml", "<threethreefourfivesizseveneightnineten/>")
     zip_buffer.seek(0)
-    with pytest.raises(ArtifactRejected, match="artifact zip has too many entries"):
-        assert read_xml_entries(zip_buffer.getvalue()) == {}
+
+    assert read_xml_entries(zip_buffer.getvalue()) == {
+        "three.xml": b"<threethreefourfivesizseveneightnineten/>"
+    }
 
 
-def test_safezip_path_issue(tmp_path, monkeypatch: pytest.MonkeyPatch):
-    test_logger.debug("Running test_safezip_path_issue")
+def test_safezip_corrupted():
+    test_logger.debug("Running test_safezip_corrupted")
 
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w") as archive:
-        archive.writestr("../../evil.xml", "one")
+        archive.writestr("one.xml", "one")
+        archive.writestr("two.xml", "<" + "0" * 150 + "/>")
 
     zip_buffer.seek(0)
-    output = read_xml_entries(zip_buffer.getvalue())
-    assert output["../../evil.xml"] == b""
+    raw = bytearray(zip_buffer.getvalue())
+    i = raw.find(b"two.xml") + 15
+    for k in range(i, i + 20):
+        raw[k] ^= 0xFF
 
-
-def test_safezip_corrupted(tmp_path, monkeypatch: pytest.MonkeyPatch):
-    test_logger.debug("Running test_safezip_skip_non_xml")
-
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as archive:
-        archive.writestr("one.zip", "one")
-        archive.writestr("two.txt", "<twothreefourfivesizseveneightnineten/>")
-    zip_buffer.seek(0)
-
-    # set the 20th element from the end of zip_buffer to 0x00 to corrupt the zip
-    buffer = bytearray(zip_buffer.getvalue())
-    buffer[len(buffer) - 20] = 0x00
-
-    zip_buffer = BytesIO(buffer)
+    zip_buffer = BytesIO(raw)
     with pytest.raises(ArtifactRejected, match="artifact is not a readable zip"):
-        assert read_xml_entries(zip_buffer.getvalue()) == {}
+        read_xml_entries(zip_buffer.getvalue())
+
+
+def test_safezip_zip_bomb(monkeypatch):
+    monkeypatch.setattr(safezip, "MAX_REPORT_BYTES", 1024 * 1024)
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("bomb.xml", b"0" * (2 * 1024 * 1024))  # ~2 KB compressed
+    with pytest.raises(ArtifactRejected, match="exceeds the size limit"):
+        read_xml_entries(buf.getvalue())
+
+
+def test_safezip_unsafe_entry_name():
+
+    unsafe_names = [
+        "../evil.xml",
+        "/absolute.xml",
+        "C:/windows.xml",
+        "normal/../../evil.xml",
+        "../notes.txt",
+        "/etc/passwd.xml",
+    ]
+    results = []
+    for name in unsafe_names:
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as archive:
+            archive.writestr(name, "<testsuite></testsuite>")
+        zip_buffer.seek(0)
+        try:
+            read_xml_entries(zip_buffer.getvalue())
+        except ArtifactRejected as e:
+            if "artifact contains unsafe entry name" in str(e):
+                continue
+        results.append(name)
+
+    assert not results, f"{len(results)} unsafe names were not rejected"
+
+
+@pytest.mark.parametrize("name", [r"dir\x.xml", r"..\..\evil.xml"])
+def test_backslash_names_unsafe(name):
+    assert not safezip._is_safe_entry_name(name)  # or whatever you named the helper
