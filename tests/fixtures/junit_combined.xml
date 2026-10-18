@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="dag combined" tests="4" failures="1" errors="0" time="0.604">
+<testsuites name="dag combined">
     <testsuite name="tests/flaky.test.ts" timestamp="2026-10-05T22:24:04.550Z" hostname="runnervm8df0l" tests="2" failures="1" errors="0" skipped="0" time="0.006670696">
         <testcase classname="tests/flaky.test.ts" name="FixtureSuite &gt; stable test always passes" time="0.001230335">
         </testcase>

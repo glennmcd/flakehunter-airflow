@@ -1,9 +1,13 @@
+import io
 import logging
-import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from flakehunter_ingest.junit import extract_testsuite, get_combined_artifact
+import pytest
+
+from flakehunter_ingest.junit import merge_junit
+from flakehunter_ingest.limits import ArtifactRejected
+from flakehunter_ingest.safezip import read_xml_entries
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
@@ -31,35 +35,107 @@ test_logger = logging.getLogger(__name__)
 #   test handling of missing fields
 
 
+def test_extract_junit_bare_root():
+
+    f1 = b"""<testsuite name="bare-root"></testsuite>"""
+    expected_result = (
+        b"<?xml version='1.0' encoding='utf-8'?>\n"
+        + b'<testsuites name="dag combined"><testsuite name="bare-root" /></testsuites>'
+    )
+
+    merge_junit_result = merge_junit({"junit.xml": f1})
+    assert merge_junit_result == expected_result
+
+
+def test_extract_junit_nested_root():
+    f1 = (
+        b"""<testsuites><testsuite name="nested-root"><testsuite name="nested-root1"/>"""
+        + b"""</testsuite></testsuites>"""
+    )
+    expected_result = (
+        b"<?xml version='1.0' encoding='utf-8'?>\n"
+        + b'<testsuites name="dag combined">'
+        + b'<testsuite name="nested-root"><testsuite name="nested-root1" />'
+        + b"</testsuite></testsuites>"
+    )
+
+    merge_junit_result = merge_junit({"junit.xml": f1})
+    assert merge_junit_result == expected_result
+
+
+def test_extract_junit_big_testcases():
+    big_cases = b"".join(b'<testcase classname="Big" name="t%d" />' % i for i in range(5000))
+    big = (
+        b'<testsuites name="dag combined"><testsuite name="big">'
+        + big_cases
+        + b"</testsuite></testsuites>"
+    )
+    expected_result = b"<?xml version='1.0' encoding='utf-8'?>\n" + big
+
+    merge_junit_result = merge_junit({"junit.xml": big})
+    assert merge_junit_result == expected_result
+
+
+def test_extract_junit_invalid_xml():
+    f1 = b"""invalid></invalid>"""
+
+    with pytest.raises(ArtifactRejected):
+        merge_junit({"junit.xml": f1})
+
+
+def test_extract_junit_one_xml():
+
+    f1 = b"""<testsuite name="bare-root"></testsuite>"""
+
+    merge_junit_result = merge_junit({"junit.xml": f1})
+    assert merge_junit_result.count(b"<?xml") == 1
+
+
+def test_fixture_artifact_end_to_end():
+    """The fixture repo's four-file artifact: three JUnit shapes plus a non-XML file."""
+    zip_bytes = (Path(__file__).parent / "fixtures" / "github_artifact2.zip").read_bytes()
+
+    files = read_xml_entries(zip_bytes)
+    assert sorted(files) == ["flaky.xml", "legacy-testsuite.xml", "unit/math.xml"]
+
+    cases_in = sum(len(ET.fromstring(xml).findall(".//testcase")) for xml in files.values())
+    merged = ET.fromstring(merge_junit(files))
+    assert merged.tag == "testsuites"
+    assert len(merged.findall(".//testcase")) == cases_in == 6
+    assert merged.find("testsuite[@name='com.example.LegacySuite']") is not None
+
+
 def test_extract_junit_combined():
     fixture_path = Path(__file__).parent / "fixtures" / "junit_combined.xml"
     junit_data_combined = ET.parse(fixture_path)
 
     fixture_path_1 = Path(__file__).parent / "fixtures" / "junit.xml"
     fixture_path_2 = Path(__file__).parent / "fixtures" / "junit2.xml"
-    combined_path = Path(__file__).parent / "fixtures" / "test_extract_junit_combined.xml"
-    combined_path = get_combined_artifact([fixture_path_1, fixture_path_2], combined_path)
-    junit_data_results = ET.parse(combined_path)
 
-    try:
-        junit_data_combined_top = junit_data_combined.getroot()
-        strip_whitespace(junit_data_combined_top)
-        assert junit_data_combined_top is not None
-        junit_data_top = junit_data_results.getroot()
-        strip_whitespace(junit_data_top)
-        assert junit_data_top is not None
-        junit_data_top_string = ET.tostring(junit_data_top, encoding="utf-8").decode("utf-8")
-        junit_data_combined_top_string = ET.tostring(
-            junit_data_combined_top, encoding="utf-8"
-        ).decode("utf-8")
-        a = ET.canonicalize(junit_data_combined_top_string)
-        b = ET.canonicalize(junit_data_top_string)
-        assert a == b
-    finally:
-        os.remove(combined_path)
+    f1: bytes
+    f2: bytes
+    with open(fixture_path_1, "rb") as f:
+        f1 = f.read()
+    with open(fixture_path_2, "rb") as f:
+        f2 = f.read()
+
+    junit_data = merge_junit({"junit.xml": f1, "junit2.xml": f2})
+
+    junit_data_results = ET.parse(io.BytesIO(junit_data))
+
+    junit_data_combined_top = junit_data_combined.getroot()
+    strip_whitespace(junit_data_combined_top)
+    assert junit_data_combined_top is not None
+    junit_data_top = junit_data_results.getroot()
+    strip_whitespace(junit_data_top)
+    assert junit_data_top is not None
+    junit_data_top_string = ET.tostring(junit_data_top, encoding="utf-8").decode("utf-8")
     junit_data_combined_top_string = ET.tostring(junit_data_combined_top, encoding="utf-8").decode(
         "utf-8"
     )
+    a = ET.canonicalize(junit_data_combined_top_string)
+    b = ET.canonicalize(junit_data_top_string)
+    assert a == b
 
 
 def strip_whitespace(element):
@@ -71,33 +147,3 @@ def strip_whitespace(element):
     for child in element:
         strip_whitespace(child)
     return element
-
-
-def test_extract_multiple_testsuites():
-    zip_path = Path(__file__).parent / "fixtures" / "github_artifact2.zip"
-    testsuites = extract_testsuite(zip_path)
-    assert testsuites is not None
-    assert len(testsuites) > 1
-    for testsuite in testsuites:
-        testsuite_top = testsuite.getroot()
-        assert testsuite_top is not None
-        testsuite_top_string = ET.tostring(testsuite_top, encoding="utf-8").decode("utf-8")
-        assert testsuite_top_string is not None
-
-
-def test_extract_junit():
-    fixture_path = Path(__file__).parent / "fixtures" / "junit.xml"
-    junit_data = ET.parse(fixture_path)
-
-    zip_path = Path(__file__).parent / "fixtures" / "github_artifact.zip"
-
-    testsuites = extract_testsuite(zip_path)
-    assert testsuites is not None
-    assert len(testsuites) == 1
-    testsuite_top = testsuites[0].getroot()
-    assert testsuite_top is not None
-    testsuite_top_string = ET.tostring(testsuite_top, encoding="utf-8").decode("utf-8")
-    junit_data_top = junit_data.getroot()
-    assert junit_data_top is not None
-    junit_data_top_string = ET.tostring(junit_data_top, encoding="utf-8").decode("utf-8")
-    assert ET.canonicalize(testsuite_top_string) == ET.canonicalize(junit_data_top_string)

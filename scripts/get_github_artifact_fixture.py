@@ -16,7 +16,7 @@ def download_github_artifact_zip() -> int:
         "Authorization": f"Bearer {YOUR_GITHUB_TOKEN}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    print(headers)
+
     with httpx.Client(headers=headers, timeout=20, follow_redirects=True) as client:
         response = client.get(url)
         response.raise_for_status()
@@ -34,7 +34,7 @@ def download_github_artifact():
         "Authorization": f"Bearer {YOUR_GITHUB_TOKEN}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    print(headers)
+
     with httpx.Client(headers=headers, timeout=10, follow_redirects=True) as client:
         response = client.get(url)
         response.raise_for_status()
