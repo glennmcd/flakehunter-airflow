@@ -34,8 +34,10 @@ from `.venv` unless given `--inexact` / `--no-sync`.
 ## Conventions
 
 - Python 3.12, `uv`, `ruff` (line length 100), `pytest`. Type hints on public functions.
-- Logic is plain Python in `src/flakehunter_ingest/`, testable without Airflow. `dags/` only wires tasks together.
-- `src/flakehunter_ingest/_api/` is generated and committed. Never edit it by hand; CI fails if it is stale.
+- Logic is plain Python in `src/`, testable without Airflow. `dags/` only wires tasks together.
+- Packages: `shared` (no CI-system code), `flakehunter_ingest_github`, `flakehunter_ingest_gitlab`. Each CI package
+  imports `shared`; `shared` imports neither; the CI packages never import each other (`tests/test_layout.py`).
+- `src/shared/_api/` is generated and committed. Never edit it by hand; CI fails if it is stale.
   Use `client.py` (the wrapper) for everything the generator cannot express.
 - The spec is pinned and changed on purpose: re-pin, regenerate, update the wrapper and tests in one commit.
   The weekly `contract-drift` workflow opens an issue when FlakeHunter's spec moves.

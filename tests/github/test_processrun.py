@@ -3,9 +3,9 @@ from datetime import UTC, datetime
 import httpx
 import respx
 
-from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
+from flakehunter_ingest_github.ghworkflowrun import GhWorkflowRun
+from flakehunter_ingest_github.processrun import process_ghworkflowrun
 from shared.limits import MAX_ARTIFACT_ZIP_BYTES
-from flakehunter_ingest.processrun import process_ghworkflowrun
 
 ARTIFACTS_URL = "https://api.github.com/repos/owner/repo/actions/runs/1/artifacts"
 DOWNLOAD_URL = "https://api.github.com/repos/owner/repo/actions/artifacts/2/zip"

@@ -1,4 +1,4 @@
-from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
+from flakehunter_ingest_github.ghworkflowrun import GhWorkflowRun
 
 
 def is_run_trusted(run: GhWorkflowRun):

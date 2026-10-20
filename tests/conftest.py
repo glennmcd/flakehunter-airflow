@@ -1,6 +1,6 @@
 import pytest
 
-from flakehunter_ingest.client import RunHeaders, make_client
+from shared.client import RunHeaders, make_client
 
 BASE = "https://fh.example.test"
 

@@ -13,23 +13,13 @@
 import json
 import logging
 
-from flakehunter_ingest.client import (
-    RunHeaders,
-    UploadError,
-    UploadResult,
-    make_client,
-    upload_report,
-)
-from flakehunter_ingest.ghartifactspec import GhArtifactSpec
-from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
-from flakehunter_ingest.github import (
-    download_artifact,
-    get_http_client_github,
-    get_resp_from_githubapi,
-)
-from shared.junit import merge_junit
+from flakehunter_ingest_github.ghartifactspec import GhArtifactSpec
+from flakehunter_ingest_github.ghworkflowrun import GhWorkflowRun
+from flakehunter_ingest_github.github import get_http_client_github, get_resp_from_githubapi
+from shared.download import download_artifact
 from shared.limits import MAX_ARTIFACT_ZIP_BYTES, ArtifactRejected
-from shared.safezip import read_xml_entries
+from shared.run import CiRun
+from shared.upload import upload_run_artifacts
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +35,6 @@ def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str, 
         logger.error(f"Artifact too large for run {run.id}")
         return
     zip_bytes: bytes | None = None
-    xml_data: dict[str, bytes]
     try:
         with get_http_client_github(github_pat) as client:
             zip_bytes = download_artifact(client, artifactSpec.archive_download_url)
@@ -53,35 +42,22 @@ def process_ghworkflowrun(run: GhWorkflowRun, uploadToken: str, uploadUrl: str, 
                 logger.error(f"Failed to download artifact for run: {run.artifacts_url}")
                 return
             logger.info(f"Downloaded artifact, size: {len(zip_bytes)} bytes")
-
-        xml_data = read_xml_entries(zip_bytes)
-        suites_file_xml = merge_junit(xml_data)
     except ArtifactRejected as e:
         logger.error(f"Artifact rejected for run {run.id}: {e}")
         return
 
-    # At this point, suites_file contains
-    # the combined XML of all test suites extracted from the artifact.
-    # upload to flakehunter API or any other relevant endpoint
-    api_client = make_client(uploadUrl, uploadToken)
+    upload_run_artifacts(to_ci_run(run), [zip_bytes], uploadUrl, uploadToken)
 
-    headers = RunHeaders(
-        run.id,
-        run.run_attempt,
-        run.head_sha,
-        run.head_branch or "main",
-        run.name,
-        run.run_started_at.isoformat(),
+
+def to_ci_run(run: GhWorkflowRun) -> CiRun:
+    return CiRun(
+        run_id=run.id,
+        run_attempt=run.run_attempt,
+        sha=run.head_sha,
+        branch=run.head_branch or "main",
+        workflow=run.name,
+        started_at=run.run_started_at,
     )
-    try:
-        upload_result: UploadResult = upload_report(api_client, suites_file_xml, headers)
-        if upload_result.status_code in [200, 201]:
-            logger.info(f"Successfully uploaded report for run: {run.artifacts_url}")
-        else:
-            logger.error(f"Failed to upload report for run: {run.artifacts_url}")
-            logger.error(f"upload_result: {upload_result}")
-    except UploadError as e:
-        logger.error(f"Upload error for run: {run.artifacts_url} - {e}")
 
 
 def get_first_non_expired_artifact(run: GhWorkflowRun, github_pat: str) -> GhArtifactSpec | None:

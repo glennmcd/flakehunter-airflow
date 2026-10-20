@@ -1,4 +1,4 @@
-"""Regenerate src/flakehunter_ingest/_api from contract/openapi.json.
+"""Regenerate src/shared/_api from contract/openapi.json.
 
 Run on purpose: `uv run python scripts/generate_client.py`.
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "contract" / "openapi.json"
-OUT = ROOT / "src" / "flakehunter_ingest" / "_api"
+OUT = ROOT / "src" / "shared" / "_api"
 
 
 def main() -> int:

@@ -6,8 +6,8 @@ from datetime import datetime
 
 from airflow.sdk import DAG, BaseHook, Variable, task
 
-from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
-from flakehunter_ingest.github import (
+from flakehunter_ingest_github.ghworkflowrun import GhWorkflowRun
+from flakehunter_ingest_github.github import (
     get_github_repo_run_url,
     get_http_client_github,
     get_list_of_runs,
@@ -15,10 +15,10 @@ from flakehunter_ingest.github import (
     qualify_discovered_runs,
     validate_repos,
 )
-from flakehunter_ingest.processrun import process_ghworkflowrun
+from flakehunter_ingest_github.processrun import process_ghworkflowrun
 
 with DAG(
-    dag_id="flakehunter_ingest",
+    dag_id="flakehunter_ingest_github",
     schedule=None,
     start_date=datetime(2022, 3, 4),
     tags=["example"],

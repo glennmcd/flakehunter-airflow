@@ -93,7 +93,7 @@ def test_extract_junit_one_xml():
 
 def test_fixture_artifact_end_to_end():
     """The fixture repo's four-file artifact: three JUnit shapes plus a non-XML file."""
-    zip_bytes = (Path(__file__).parent / "fixtures" / "github_artifact2.zip").read_bytes()
+    zip_bytes = (Path(__file__).parent.parent / "fixtures" / "github_artifact2.zip").read_bytes()
 
     files = read_xml_entries(zip_bytes)
     assert sorted(files) == ["flaky.xml", "legacy-testsuite.xml", "unit/math.xml"]
@@ -106,11 +106,11 @@ def test_fixture_artifact_end_to_end():
 
 
 def test_extract_junit_combined():
-    fixture_path = Path(__file__).parent / "fixtures" / "junit_combined.xml"
+    fixture_path = Path(__file__).parent.parent / "fixtures" / "junit_combined.xml"
     junit_data_combined = ET.parse(fixture_path)
 
-    fixture_path_1 = Path(__file__).parent / "fixtures" / "junit.xml"
-    fixture_path_2 = Path(__file__).parent / "fixtures" / "junit2.xml"
+    fixture_path_1 = Path(__file__).parent.parent / "fixtures" / "junit.xml"
+    fixture_path_2 = Path(__file__).parent.parent / "fixtures" / "junit2.xml"
 
     f1: bytes
     f2: bytes

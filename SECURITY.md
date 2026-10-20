@@ -13,7 +13,7 @@ a week.
 
 In scope:
 
-- The DAGs in `dags/` and the code in `src/flakehunter_ingest/`, for example handling of untrusted GitHub
+- The DAGs in `dags/` and the code in `src/`, for example handling of untrusted GitHub
   artifacts (zip and JUnit XML parsing), token handling and upload headers.
 - The GitHub Actions workflows in `.github/workflows/`.
 

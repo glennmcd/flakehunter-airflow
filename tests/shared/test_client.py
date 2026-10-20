@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from flakehunter_ingest.client import (
+from shared.client import (
     UploadError,
     upload_report,
 )

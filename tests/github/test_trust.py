@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from flakehunter_ingest.github import get_list_of_runs
-from shared.trust import is_run_trusted
+from flakehunter_ingest_github.github import get_list_of_runs
+from flakehunter_ingest_github.trust import is_run_trusted
 
 
 def test_trust_logic():
-    fixture_path = Path(__file__).parent / "fixtures" / "github_list_runs.json"
+    fixture_path = Path(__file__).parent.parent / "fixtures" / "github_list_runs.json"
     strData = fixture_path.read_text(encoding="utf-8")
     list_of_runs = get_list_of_runs(strData)
     assert isinstance(list_of_runs, list)

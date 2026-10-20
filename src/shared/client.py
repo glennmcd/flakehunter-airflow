@@ -16,12 +16,12 @@ from typing import Literal
 
 import httpx
 
-from flakehunter_ingest._api.api.reports import post_api_v2_reports
-from flakehunter_ingest._api.client import AuthenticatedClient
-from flakehunter_ingest._api.models.post_api_v2_reports_content_encoding import (
+from shared._api.api.reports import post_api_v2_reports
+from shared._api.client import AuthenticatedClient
+from shared._api.models.post_api_v2_reports_content_encoding import (
     PostApiV2ReportsContentEncoding,
 )
-from flakehunter_ingest._api.types import UNSET, File
+from shared._api.types import UNSET, File
 from shared.limits import MAX_REPORT_BYTES
 
 REPORT_KEY = "webhook-artifact"

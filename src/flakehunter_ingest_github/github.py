@@ -4,9 +4,8 @@ from types import SimpleNamespace
 
 import httpx
 
-from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
-from shared.limits import MAX_ARTIFACT_ZIP_BYTES, ArtifactRejected
-from shared.trust import is_run_trusted
+from flakehunter_ingest_github.ghworkflowrun import GhWorkflowRun
+from flakehunter_ingest_github.trust import is_run_trusted
 
 logger = logging.getLogger(__name__)
 
@@ -14,38 +13,6 @@ logger = logging.getLogger(__name__)
 class GitHubRunData:
     def __init__(self, run: dict):
         self.run = run
-
-
-def download_artifact(client: httpx.Client, zip_url: str) -> bytes | None:
-
-    try:
-        with client.stream("GET", zip_url) as response:
-            response.raise_for_status()  # Raise an exception if the HTTP request failed
-            content_length = response.headers.get("Content-Length")
-            if content_length is not None:
-                try:
-                    content_length = int(content_length)
-                except ValueError:
-                    logger.warning("Invalid content-length header - ignoring")
-                    content_length = None
-                if content_length is not None and content_length > MAX_ARTIFACT_ZIP_BYTES:
-                    raise ArtifactRejected(
-                        "Artifact exceeds maximum allowed size in content-length header"
-                    )
-            running_total = 0
-            chunks = []
-            for chunk in response.iter_bytes():
-                running_total += len(chunk)
-                if running_total > MAX_ARTIFACT_ZIP_BYTES:
-                    raise ArtifactRejected("Artifact exceeds maximum allowed size in file stream")
-                chunks.append(chunk)
-
-            return b"".join(chunks)
-
-    except httpx.HTTPStatusError as e:
-        logger.error(f"Failed to download artifact zip: {e.response.status_code}")
-
-    return None
 
 
 def get_github_repo_run_url(repo_owner: str, repo_name: str) -> str:

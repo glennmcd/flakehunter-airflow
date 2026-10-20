@@ -8,10 +8,10 @@ from pathlib import Path
 import httpx
 import respx
 
-from flakehunter_ingest.client import REPORT_KEY, RunHeaders, upload_report
+from shared.client import REPORT_KEY, RunHeaders, upload_report
 from tests.conftest import BASE
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SPEC = json.loads((ROOT / "contract" / "openapi.json").read_text(encoding="utf-8"))
 OP = SPEC["paths"]["/api/v2/reports"]["post"]
 PARAMS = {p["name"]: p for p in OP["parameters"] if p["in"] == "header"}
