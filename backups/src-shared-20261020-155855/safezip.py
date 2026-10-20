@@ -4,7 +4,7 @@ import zipfile
 import zlib
 from pathlib import PurePosixPath
 
-from flakehunter_ingest.limits import MAX_REPORT_BYTES, MAX_ZIP_ENTRIES, ArtifactRejected
+from shared.limits import MAX_REPORT_BYTES, MAX_ZIP_ENTRIES, ArtifactRejected
 
 CHUNK_LIMIT = 64 * 1024  # 64 KB chunks
 

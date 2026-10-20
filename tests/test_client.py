@@ -8,7 +8,7 @@ from flakehunter_ingest.client import (
     UploadError,
     upload_report,
 )
-from flakehunter_ingest.limits import MAX_REPORT_BYTES
+from shared.limits import MAX_REPORT_BYTES
 from tests.conftest import BASE
 
 URL = f"{BASE}/api/v2/reports"

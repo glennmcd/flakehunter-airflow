@@ -2,10 +2,11 @@
 
 **Status:** Draft, for review. No code changes until this is agreed.
 
-This brief extends `flakehunter_ingest` to GitLab CI. A second DAG lists finished GitLab pipelines, collects the JUnit
-XML from their jobs and uploads it through FlakeHunter's `POST /api/v2/reports`. Zip extraction, JUnit merge and size
-limits are reused unchanged. What is new: a run model shared by both DAGs, a GitLab module, a rule for the run attempt,
-a trust check and the configuration.
+This brief extends the ingest to GitLab CI. A second DAG lists finished GitLab pipelines, collects the JUnit XML from
+their jobs and uploads it through FlakeHunter's `POST /api/v2/reports`. The code is split into three packages: one per
+CI system and a `shared` package for everything that does not depend on one (see [Package layout](#package-layout)).
+Zip extraction, JUnit merge and size limits are reused unchanged. What is new: a run model shared by both DAGs, a GitLab
+package, a rule for the run attempt, a trust check and the configuration.
 
 In FlakeHunter's terms, a GitLab project is a repository with host `gitlab`, and its pipelines are runs with CI source
 `gitlab_ci`. The FlakeHunter side is planned in that repo; this brief covers only the DAG.
@@ -31,7 +32,7 @@ only `github_actions`, and `host` only `github`. The DAG needs, from FlakeHunter
   external id and `path_with_namespace` as the full name (nested paths are accepted by API v2), and its upload token
   is minted with `TOKEN_REPO_HOST=gitlab`.
 
-On this repo's side, the first step is a re-pin to that tag (`uv run python scripts/pin_spec.py <tag>`, then
+On this repo's side, after the restructure (see [Code changes](#code-changes)), the next step is a re-pin to that tag (`uv run python scripts/pin_spec.py <tag>`, then
 `generate_client.py`), committed with the wrapper and test updates as one change. Until then the generated client
 and `tests/test_contract.py` reject `gitlab_ci`, so no GitLab code can land before the re-pin.
 
@@ -126,28 +127,83 @@ Numeric project ids avoid the URL-encoding and nested-path problems of `group/su
 renames and transfers. The existing `flakehunter_repos` Variable and GitHub connections are untouched. One GitLab host
 per deployment is supported.
 
+## Package layout
+
+```text
+src/
+  shared/                       no CI-system code; imports neither package below
+    _api/                       generated FlakeHunter client (moved from flakehunter_ingest/_api)
+    client.py                   RunHeaders, upload_report, gzip, size limit, 429 handling
+    run.py                      CiRun: the provider-neutral run
+    upload.py                   zip bytes → XML files → merge → upload, for any CiRun
+    download.py                 size-limited artifact stream (moved out of github.py)
+    junit.py  safezip.py  limits.py
+  flakehunter_ingest_github/    today's flakehunter_ingest, renamed
+    github.py  ghworkflowrun.py  ghartifactspec.py
+    trust.py                    is_run_trusted
+    processrun.py               GhWorkflowRun → CiRun + artifact zips → shared.upload
+  flakehunter_ingest_gitlab/
+    gitlab.py                   HTTP client, pipeline and job listing, attempt derivation
+    pipeline.py                 GlPipeline, parsed from the API like GhWorkflowRun
+    trust.py                    is_pipeline_trusted
+    processpipeline.py          GlPipeline → CiRun + job archives → shared.upload
+dags/
+  flakehunter_github_dag.py     dag_id flakehunter_ingest_github; imports flakehunter_ingest_github
+  flakehunter_gitlab_dag.py     dag_id flakehunter_ingest_gitlab; imports flakehunter_ingest_gitlab
+```
+
+The dependency rule is one-way: each CI package imports `shared`, `shared` imports neither, and the two CI packages
+never import each other. A GitLab change then cannot break the GitHub DAG except through `shared`, whose tests cover
+both. `tests/test_layout.py` enforces the rule by parsing the imports of every module under `src/`.
+
+The move is already under way in the working tree: `junit.py`, `safezip.py`, `limits.py` and `trust.py` are in
+`src/shared/`. `trust.py` holds the GitHub rule and imports `GhWorkflowRun`, so it moves on to
+`flakehunter_ingest_github/` to keep `shared` free of GitHub code.
+
+Moving `_api` touches the tooling that names its path: `OUT` in `scripts/generate_client.py`, the staleness check in
+`.github/workflows/ci.yml`, `extend-exclude` in `pyproject.toml` and the conventions in `CLAUDE.md`. The generated code
+uses relative imports, so it is regenerated in place without changes. `pyproject.toml` lists all three packages under
+`[tool.hatch.build.targets.wheel]`, and `src/shared/` gets an `__init__.py`; without both, the dev container's
+`pip install -e .` would not install `shared` and the DAGs would fail to import it.
+
+Each DAG is one file directly in `dags/`, named for its CI system. The file names differ from the package names, so
+nothing in `dags/`, which Airflow puts on `sys.path`, can shadow a package in `src/`. All logic stays in the packages;
+a DAG file only wires tasks together.
+
+The GitHub DAG's id changes from `flakehunter_ingest` to `flakehunter_ingest_github`. Airflow keys run history by DAG
+id, so the renamed DAG starts with an empty history and the old one is listed until it is deleted in the UI. With
+`catchup` on, the new DAG re-runs its window on the first start; that is safe, since uploads are idempotent, and the
+re-run uploads come back as `200` duplicates. Pause `flakehunter_ingest` before deploying the rename so the two do not
+run side by side.
+
+The name `shared` is generic: anything else on Airflow's `sys.path` called `shared` (a folder in `dags/` or `plugins/`,
+another installed distribution) would shadow it or be shadowed by it. Nothing in this deployment uses the name today;
+the layout test also rejects a `dags/shared` or `plugins/shared`.
+
 ## Code changes
 
-These start from the re-pin that adds `gitlab_ci` (see [FlakeHunter dependencies](#flakehunter-dependencies)).
+Three commits, in this order. The first two change no behaviour.
 
-- `contract/`, `src/flakehunter_ingest/_api/`: re-pinned and regenerated by the scripts, never edited by hand. The
-  generated `X-FH-CI-Source` enum gains `gitlab_ci`.
-- `src/flakehunter_ingest/run.py`: a provider-neutral `CiRun` (CI source, run id, attempt, sha, branch, workflow,
-  started at, upload connection id) with a `headers()` method that builds `RunHeaders`.
-- `src/flakehunter_ingest/client.py`: `RunHeaders` gains an optional `ci_source`, passed to
-  `post_api_v2_reports` as `x_fh_ci_source` when set and left `UNSET` otherwise; its docstring says the values come
-  from the CI run, not specifically the GitHub `workflow_run`. The GitHub path keeps it unset, as today: FlakeHunter
-  then records `github_actions`, so its uploads stay duplicates of the webhook's.
-- `src/flakehunter_ingest/gitlab.py`: HTTP client, pipeline and job listing, attempt derivation, artifact download.
-  `download_artifact` moves out of `github.py` into a shared module so both DAGs use the same size-limited stream.
-- `src/flakehunter_ingest/trust.py`: an `is_pipeline_trusted` next to the existing check.
-- `src/flakehunter_ingest/processrun.py`: split so the "XML files → merge → upload" step takes a `CiRun` and a list
-  of zip bytes, independent of the CI system. The GitHub path is moved onto it with no change in behaviour.
-- `dags/flakehunter_gitlab_dag.py`: the new DAG.
-- `scripts/get_gitlab_fixture.py`: records pipeline, job and artifact fixtures from a real project, like the GitHub
-  scripts.
+1. **Restructure** (no GitLab code): finish the move above. Rename `flakehunter_ingest` to
+   `flakehunter_ingest_github`, move `_api` and `client.py` into `shared` with the tooling changes listed above, move
+   `trust.py` back to the GitHub package, move `download_artifact` from `github.py` to `shared/download.py`, and
+   rename `dags/flakehunter_dag.py` to `dags/flakehunter_github_dag.py` with the new DAG id. Split
+   `processrun.py`: the "zip bytes → XML files → merge → upload" step becomes `shared/upload.py`, taking a `CiRun` and
+   a list of zip bytes, and the GitHub path calls it with no change in behaviour. Add `shared/run.py` with `CiRun` (CI
+   source, run id, attempt, sha, branch, workflow, started at, upload connection id) and a `headers()` method that
+   builds `RunHeaders`. Tests import from the new paths and otherwise pass unchanged.
+2. **Re-pin** to the FlakeHunter tag that adds `gitlab_ci` (see [FlakeHunter dependencies](#flakehunter-dependencies)):
+   `contract/` and `src/shared/_api/` regenerated by the scripts, never edited by hand. The generated `X-FH-CI-Source`
+   enum gains `gitlab_ci`. `RunHeaders` in `shared/client.py` gains an optional `ci_source`, passed to
+   `post_api_v2_reports` as `x_fh_ci_source` when set and left `UNSET` otherwise; its docstring says the values come
+   from the CI run, not specifically the GitHub `workflow_run`. The GitHub path keeps it unset, as today: FlakeHunter
+   then records `github_actions`, so its uploads stay duplicates of the webhook's.
+3. **GitLab**: the `flakehunter_ingest_gitlab` package above, `dags/flakehunter_gitlab_dag.py`, and
+   `scripts/get_gitlab_fixture.py`, which records pipeline, job and artifact fixtures from a real project, like the
+   GitHub scripts. GitLab tests go in `tests/gitlab/`; the existing tests move to `tests/github/` and `tests/shared/`
+   to match the packages.
 
-`junit.py`, `safezip.py` and `limits.py` do not change.
+`junit.py`, `safezip.py` and `limits.py` move but do not change.
 
 ## Validation
 
@@ -158,8 +214,13 @@ These start from the re-pin that adds `gitlab_ci` (see [FlakeHunter dependencies
 - **Contract:** `tests/test_contract.py` follows the re-pin: `test_pinned_version` takes the new `info.version`,
   `test_run_headers_cover_the_documented_set` includes `ci_source`, and `test_sent_headers_are_declared_and_valid`
   also runs with GitLab headers, so `gitlab_ci` is checked against the pinned enum.
-- **Regression:** the existing GitHub tests pass unchanged after the `processrun` split, including
-  `test_ci_source_is_left_to_the_github_default`: GitHub uploads still send no `X-FH-CI-Source`.
+- **Layout:** `tests/test_layout.py` fails if `shared` imports a CI package, one CI package imports the other, or a
+  `dags/shared` or `plugins/shared` exists.
+- **Regression:** after the restructure commit, the existing GitHub tests pass with only their imports changed,
+  including `test_ci_source_is_left_to_the_github_default`: GitHub uploads still send no `X-FH-CI-Source`.
+  `generate_client.py` followed by `git diff --exit-code -- src/shared/_api` shows no change, and
+  `airflow dags list-import-errors` in the dev container is empty and `airflow dags list` shows
+  `flakehunter_ingest_github`.
 - **End to end:** in the dev container, `airflow dags test flakehunter_ingest_gitlab` against a local FlakeHunter
   at the re-pinned tag, with a `gitlab` repository registered, and a gitlab.com test project. Run the interval twice
   and expect `201`s then `200` duplicates, each response with `run.ciSource: "gitlab_ci"` and `run.ciRunId` equal to

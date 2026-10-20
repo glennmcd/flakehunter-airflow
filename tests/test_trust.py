@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from flakehunter_ingest.github import get_list_of_runs
-from flakehunter_ingest.trust import is_run_trusted
+from shared.trust import is_run_trusted
 
 
 def test_trust_logic():

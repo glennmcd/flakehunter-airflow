@@ -4,7 +4,7 @@ import httpx
 import respx
 
 from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
-from flakehunter_ingest.limits import MAX_ARTIFACT_ZIP_BYTES
+from shared.limits import MAX_ARTIFACT_ZIP_BYTES
 from flakehunter_ingest.processrun import process_ghworkflowrun
 
 ARTIFACTS_URL = "https://api.github.com/repos/owner/repo/actions/runs/1/artifacts"

@@ -5,8 +5,8 @@ from types import SimpleNamespace
 import httpx
 
 from flakehunter_ingest.ghworkflowrun import GhWorkflowRun
-from flakehunter_ingest.limits import MAX_ARTIFACT_ZIP_BYTES, ArtifactRejected
-from flakehunter_ingest.trust import is_run_trusted
+from shared.limits import MAX_ARTIFACT_ZIP_BYTES, ArtifactRejected
+from shared.trust import is_run_trusted
 
 logger = logging.getLogger(__name__)
 

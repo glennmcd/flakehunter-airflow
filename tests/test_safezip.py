@@ -4,9 +4,9 @@ from io import BytesIO
 
 import pytest
 
-import flakehunter_ingest.safezip as safezip
-from flakehunter_ingest.limits import ArtifactRejected
-from flakehunter_ingest.safezip import read_xml_entries
+import shared.safezip as safezip
+from shared.limits import ArtifactRejected
+from shared.safezip import read_xml_entries
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)

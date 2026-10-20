@@ -27,9 +27,9 @@ from flakehunter_ingest.github import (
     get_http_client_github,
     get_resp_from_githubapi,
 )
-from flakehunter_ingest.junit import merge_junit
-from flakehunter_ingest.limits import MAX_ARTIFACT_ZIP_BYTES, ArtifactRejected
-from flakehunter_ingest.safezip import read_xml_entries
+from shared.junit import merge_junit
+from shared.limits import MAX_ARTIFACT_ZIP_BYTES, ArtifactRejected
+from shared.safezip import read_xml_entries
 
 logger = logging.getLogger(__name__)
 

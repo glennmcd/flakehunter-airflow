@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import xml.etree.ElementTree as ET
 
-from flakehunter_ingest.limits import ArtifactRejected
+from shared.limits import ArtifactRejected
 
 logger = logging.getLogger(__name__)
 

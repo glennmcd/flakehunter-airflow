@@ -22,7 +22,7 @@ from flakehunter_ingest._api.models.post_api_v2_reports_content_encoding import 
     PostApiV2ReportsContentEncoding,
 )
 from flakehunter_ingest._api.types import UNSET, File
-from flakehunter_ingest.limits import MAX_REPORT_BYTES
+from shared.limits import MAX_REPORT_BYTES
 
 REPORT_KEY = "webhook-artifact"
 MAX_RATE_LIMIT_RETRIES = 3

@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from flakehunter_ingest.junit import merge_junit
-from flakehunter_ingest.limits import ArtifactRejected
-from flakehunter_ingest.safezip import read_xml_entries
+from shared.junit import merge_junit
+from shared.limits import ArtifactRejected
+from shared.safezip import read_xml_entries
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)

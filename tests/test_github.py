@@ -16,7 +16,7 @@ from flakehunter_ingest.github import (
     get_list_of_runs,
     get_resp_from_githubapi,
 )
-from flakehunter_ingest.limits import ArtifactRejected
+from shared.limits import ArtifactRejected
 
 logging.basicConfig(level=logging.DEBUG)
 test_logger = logging.getLogger(__name__)
