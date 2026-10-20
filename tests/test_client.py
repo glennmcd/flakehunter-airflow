@@ -11,7 +11,7 @@ from flakehunter_ingest.client import (
 from flakehunter_ingest.limits import MAX_REPORT_BYTES
 from tests.conftest import BASE
 
-URL = f"{BASE}/api/reports"
+URL = f"{BASE}/api/v2/reports"
 XML = b"<testsuite name='s'><testcase name='t'/></testsuite>"
 OK_BODY = {
     "run": {"id": 1, "runId": 123, "runAttempt": 2, "sha": "a" * 40, "branch": "main"},

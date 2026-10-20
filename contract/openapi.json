@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FlakeHunter API",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Ingests JUnit XML reports and reports flaky tests. A test is flaky on a commit when it has both a pass and a fail (or error) on the same commit SHA. Every error uses the same body: `{ error: { code, message, details? }, requestId }`. Lists take `?limit=&offset=` and return `{ data, page: { limit, offset, total } }`."
   },
   "components": {
@@ -21,13 +21,13 @@
     "schemas": {}
   },
   "paths": {
-    "/api/tests/flaky": {
+    "/api/v2/tests/flaky": {
       "get": {
         "summary": "Rank flaky tests",
         "tags": [
           "tests"
         ],
-        "description": "Flake rate = flaky SHAs / SHAs run in the window (skipped results ignored). Only tests with at least minRuns SHAs and one flaky SHA appear, most flaky first. repo is owner/name or a numeric id.",
+        "description": "Flake rate = flaky SHAs / SHAs run in the window (skipped results ignored). Only tests with at least minRuns SHAs and one flaky SHA appear, most flaky first. repo is a numeric id or a path (owner/name, group/sub/project), optionally prefixed with its host (github:acme/widgets). A path without a host that matches repositories on more than one host is a 400.",
         "parameters": [
           {
             "schema": {
@@ -369,7 +369,7 @@
         }
       }
     },
-    "/api/repos/{id}/summary": {
+    "/api/v2/repos/{id}/summary": {
       "get": {
         "summary": "Summarise a repository",
         "tags": [
@@ -697,13 +697,13 @@
         }
       }
     },
-    "/api/reports": {
+    "/api/v2/reports": {
       "post": {
         "summary": "Upload a JUnit XML report",
         "tags": [
           "reports"
         ],
-        "description": "Authenticated with a per-repository upload token (not the read token); the repository comes from the token. Idempotent on (run id, attempt, report key): the first upload returns 201, a repeat returns 200 with the original counts. A SHA that contradicts an existing run is a 400. Unparseable bodies or reports with no testsuite are 422 (invalid_report) and store nothing. Rate limited per IP and per token (429 with Retry-After).",
+        "description": "Authenticated with a per-repository upload token (not the read token); the repository comes from the token. X-FH-CI-Source names the CI system that ran the tests and defaults to the host's own (github_actions for GitHub), so an upload without it is the same run as a v1 upload. Idempotent on (CI source, run id, attempt, report key): the first upload returns 201, a repeat returns 200 with the original counts. A SHA that contradicts an existing run is a 400. Unparseable bodies or reports with no testsuite are 422 (invalid_report) and store nothing. Rate limited per IP and per token (429 with Retry-After).",
         "parameters": [
           {
             "schema": {
@@ -776,6 +776,17 @@
             "required": false
           },
           {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "github_actions"
+              ]
+            },
+            "in": "header",
+            "name": "x-fh-ci-source",
+            "required": false
+          },
+          {
             "name": "content-encoding",
             "in": "header",
             "required": false,
@@ -809,10 +820,16 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
-                        "githubRunId": {
+                        "ciRunId": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "ciSource": {
+                          "type": "string",
+                          "enum": [
+                            "github_actions"
+                          ]
                         },
                         "attempt": {
                           "type": "integer",
@@ -825,7 +842,8 @@
                       },
                       "required": [
                         "id",
-                        "githubRunId",
+                        "ciRunId",
+                        "ciSource",
                         "attempt",
                         "headSha"
                       ],
@@ -905,10 +923,16 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
-                        "githubRunId": {
+                        "ciRunId": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "ciSource": {
+                          "type": "string",
+                          "enum": [
+                            "github_actions"
+                          ]
                         },
                         "attempt": {
                           "type": "integer",
@@ -921,7 +945,8 @@
                       },
                       "required": [
                         "id",
-                        "githubRunId",
+                        "ciRunId",
+                        "ciSource",
                         "attempt",
                         "headSha"
                       ],
@@ -1332,7 +1357,7 @@
         }
       }
     },
-    "/api/repos": {
+    "/api/v2/repos": {
       "get": {
         "summary": "List repositories",
         "tags": [
@@ -1389,13 +1414,20 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "host": {
+                            "type": "string",
+                            "enum": [
+                              "github"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "fullName",
                           "owner",
-                          "name"
+                          "name",
+                          "host"
                         ],
                         "additionalProperties": false
                       }
@@ -1569,7 +1601,7 @@
         }
       }
     },
-    "/api/tests/{id}/failures": {
+    "/api/v2/tests/{id}/failures": {
       "get": {
         "summary": "Get a test's recent failures",
         "tags": [
@@ -1667,10 +1699,16 @@
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
                               },
-                              "githubRunId": {
+                              "ciRunId": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "ciSource": {
+                                "type": "string",
+                                "enum": [
+                                  "github_actions"
+                                ]
                               },
                               "attempt": {
                                 "type": "integer",
@@ -1689,7 +1727,8 @@
                             },
                             "required": [
                               "id",
-                              "githubRunId",
+                              "ciRunId",
+                              "ciSource",
                               "attempt",
                               "workflowName",
                               "htmlUrl"
@@ -1917,7 +1956,7 @@
         }
       }
     },
-    "/api/tests/{id}/history": {
+    "/api/v2/tests/{id}/history": {
       "get": {
         "summary": "Get a test's history",
         "tags": [
@@ -2074,10 +2113,16 @@
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
                               },
-                              "githubRunId": {
+                              "ciRunId": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "ciSource": {
+                                "type": "string",
+                                "enum": [
+                                  "github_actions"
+                                ]
                               },
                               "attempt": {
                                 "type": "integer",
@@ -2096,7 +2141,8 @@
                             },
                             "required": [
                               "id",
-                              "githubRunId",
+                              "ciRunId",
+                              "ciSource",
                               "attempt",
                               "workflowName",
                               "htmlUrl"

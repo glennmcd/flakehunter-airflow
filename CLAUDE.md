@@ -8,8 +8,8 @@ apply here.
 
 ## FlakeHunter context
 
-- **Contract:** `contract/openapi.json`, a pinned copy of FlakeHunter's `docs/openapi.json` (see `contract/PIN.md`).
-  Read this file, not the FlakeHunter source tree.
+- **Contract:** `contract/openapi.json`, a pinned copy of FlakeHunter's `docs/openapi.v2.json`, the API v2 contract
+  (see `contract/PIN.md`). Read this file, not the FlakeHunter source tree.
 - **Idempotency:** [ADR 0005](https://github.com/glennmcd/flakehunter/blob/main/docs/decisions/0005-upload-api-xml-and-headers.md);
   tokens: [ADR 0006](https://github.com/glennmcd/flakehunter/blob/main/docs/decisions/0006-read-token-and-upload-tokens.md).
 - `claude --add-dir ../flakehunter` (or `/add-dir`) gives file access to that checkout only. Project instructions,

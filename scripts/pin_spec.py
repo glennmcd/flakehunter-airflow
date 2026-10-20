@@ -1,4 +1,6 @@
-"""Re-pin contract/openapi.json to a FlakeHunter tag: `uv run python scripts/pin_spec.py v0.2.0`.
+"""Re-pin contract/openapi.json to a FlakeHunter tag: `uv run python scripts/pin_spec.py v0.3.0`.
+
+The pinned file is FlakeHunter's docs/openapi.v2.json, the API v2 contract (/api/v2).
 
 Afterwards run scripts/generate_client.py and update the client wrapper and tests on purpose.
 """
@@ -9,6 +11,7 @@ import urllib.request
 from pathlib import Path
 
 REPO = "glennmcd/flakehunter"
+SPEC_PATH = "docs/openapi.v2.json"
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -18,7 +21,7 @@ def fetch(url: str) -> bytes:
 
 
 def main(tag: str) -> int:
-    spec_bytes = fetch(f"https://raw.githubusercontent.com/{REPO}/{tag}/docs/openapi.json")
+    spec_bytes = fetch(f"https://raw.githubusercontent.com/{REPO}/{tag}/{SPEC_PATH}")
     version = json.loads(spec_bytes)["info"]["version"]
     commit = json.loads(fetch(f"https://api.github.com/repos/{REPO}/commits/{tag}"))["sha"]
     (ROOT / "contract" / "openapi.json").write_bytes(spec_bytes)
@@ -27,7 +30,7 @@ def main(tag: str) -> int:
 
 | | |
 |---|---|
-| Source | https://github.com/{REPO}/blob/{tag}/docs/openapi.json |
+| Source | https://github.com/{REPO}/blob/{tag}/{SPEC_PATH} |
 | Tag | `{tag}` |
 | Commit | `{commit}` |
 | `info.version` | `{version}` |

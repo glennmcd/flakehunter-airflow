@@ -1,10 +1,10 @@
 # flakehunter_ingest
 
 `flakehunter_ingest` is an Airflow 3 DAG that pulls JUnit XML artifacts from GitHub Actions runs and uploads them to
-FlakeHunter through `POST /api/reports`. It runs alongside the FlakeHunter webhook: it catches runs the webhook missed
+FlakeHunter through `POST /api/v2/reports`. It runs alongside the FlakeHunter webhook: it catches runs the webhook missed
 and backfills repositories added later. Both paths write the same records, so running both never counts a run twice.
 
-The contract is FlakeHunter's `docs/openapi.json` (`info.version` 1.0.0). Idempotency follows
+The contract is FlakeHunter's `docs/openapi.v2.json` (`info.version` 2.0.0). Idempotency follows
 [ADR 0005](https://github.com/glennmcd/flakehunter/blob/main/docs/decisions/0005-upload-api-xml-and-headers.md):
 uploading the same run, attempt and report key again is a no-op that returns `200` with the original counts.
 
@@ -112,9 +112,9 @@ dags/flakehunter_ingest.py      DAG definition (airflow.sdk TaskFlow, dynamic ta
 src/flakehunter_ingest/
   github.py                     run listing, attempt fields, artifact download
   junit.py                      zip extraction and <testsuites> merge
-  client.py                     httpx client for POST /api/reports
+  client.py                     httpx client for POST /api/v2/reports
   trust.py                      trigger and head-repository checks
-contract/openapi.json           copy of FlakeHunter's contract, pinned at 1.0.0
+contract/openapi.json           copy of FlakeHunter's contract, pinned at 2.0.0
 tests/
 ```
 

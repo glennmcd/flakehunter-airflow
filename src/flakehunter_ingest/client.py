@@ -1,4 +1,4 @@
-"""Thin wrapper over the generated client for POST /api/reports.
+"""Thin wrapper over the generated client for POST /api/v2/reports.
 
 The generated code builds the request and parses responses; this module adds what the spec cannot
 express: the real application/xml Content-Type, gzip, the local size limit and 429 handling.
@@ -16,10 +16,10 @@ from typing import Literal
 
 import httpx
 
-from flakehunter_ingest._api.api.reports import post_api_reports
+from flakehunter_ingest._api.api.reports import post_api_v2_reports
 from flakehunter_ingest._api.client import AuthenticatedClient
-from flakehunter_ingest._api.models.post_api_reports_content_encoding import (
-    PostApiReportsContentEncoding,
+from flakehunter_ingest._api.models.post_api_v2_reports_content_encoding import (
+    PostApiV2ReportsContentEncoding,
 )
 from flakehunter_ingest._api.types import UNSET, File
 from flakehunter_ingest.limits import MAX_REPORT_BYTES
@@ -84,7 +84,7 @@ def upload_report(
         )
 
     body = gzip.compress(xml)
-    kwargs = post_api_reports._get_kwargs(
+    kwargs = post_api_v2_reports._get_kwargs(
         body=File(payload=io.BytesIO(body)),
         x_fh_run_id=headers.run_id,
         x_fh_sha=headers.sha,
@@ -93,7 +93,7 @@ def upload_report(
         x_fh_workflow=headers.workflow or UNSET,
         x_fh_report_key=REPORT_KEY,
         x_fh_timestamp=headers.timestamp or UNSET,
-        content_encoding=PostApiReportsContentEncoding.GZIP,
+        content_encoding=PostApiV2ReportsContentEncoding.GZIP,
     )
     kwargs["content"] = body  # the generated code passes the BinaryIO wrapper
     kwargs["headers"]["Content-Type"] = "application/xml"
@@ -112,7 +112,7 @@ def upload_report(
         return UploadResult("duplicate", status)
     # Success bodies are not parsed: only the status matters. Error bodies carry code and requestId.
     parsed = (
-        post_api_reports._parse_response(client=client, response=raw)
+        post_api_v2_reports._parse_response(client=client, response=raw)
         if status in (400, 401, 413, 422, 429)
         else None
     )
@@ -125,7 +125,7 @@ def upload_report(
             error_message=error.message,
             request_id=parsed.request_id,  # type: ignore[union-attr]
         )
-    raise UploadError(f"POST /api/reports returned {status}")
+    raise UploadError(f"POST /api/v2/reports returned {status}")
 
 
 def _retry_after(response: httpx.Response) -> float:

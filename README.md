@@ -1,7 +1,7 @@
 # flakehunter-airflow
 
 Airflow 3 pipeline for [FlakeHunter](https://github.com/glennmcd/flakehunter). The `flakehunter_ingest` DAG pulls
-JUnit XML artifacts from GitHub Actions runs and uploads them with `POST /api/reports`. It catches runs the
+JUnit XML artifacts from GitHub Actions runs and uploads them with `POST /api/v2/reports`. It catches runs the
 FlakeHunter webhook missed and backfills repositories added later. Uploads are idempotent, so running both paths
 never counts a run twice.
 

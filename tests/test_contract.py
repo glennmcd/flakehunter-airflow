@@ -1,4 +1,4 @@
-"""The client must follow contract/openapi.json (the pinned FlakeHunter spec)."""
+"""The client must follow contract/openapi.json (the pinned FlakeHunter API v2 spec)."""
 
 import json
 import re
@@ -13,17 +13,17 @@ from tests.conftest import BASE
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = json.loads((ROOT / "contract" / "openapi.json").read_text(encoding="utf-8"))
-OP = SPEC["paths"]["/api/reports"]["post"]
+OP = SPEC["paths"]["/api/v2/reports"]["post"]
 PARAMS = {p["name"]: p for p in OP["parameters"] if p["in"] == "header"}
 
 
 def test_pinned_version():
-    assert SPEC["info"]["version"] == "1.0.0"
+    assert SPEC["info"]["version"] == "2.0.0"
 
 
 @respx.mock
 def test_sent_headers_are_declared_and_valid(client, headers):
-    route = respx.post(f"{BASE}/api/reports").mock(
+    route = respx.post(f"{BASE}/api/v2/reports").mock(
         return_value=httpx.Response(201, json={"run": {}, "duplicate": False, "counts": {}})
     )
     upload_report(client, b"<testsuite/>", headers)
@@ -67,3 +67,14 @@ def test_run_headers_cover_the_documented_set():
 
 def test_documented_statuses_are_handled():
     assert set(OP["responses"]) == {"200", "201", "400", "401", "413", "422", "429"}
+
+
+@respx.mock
+def test_ci_source_is_left_to_the_github_default(client, headers):
+    """GitHub Actions runs omit X-FH-CI-Source; the API then records them as github_actions."""
+    assert PARAMS["x-fh-ci-source"]["required"] is False
+    route = respx.post(f"{BASE}/api/v2/reports").mock(
+        return_value=httpx.Response(201, json={"run": {}, "duplicate": False, "counts": {}})
+    )
+    upload_report(client, b"<testsuite/>", headers)
+    assert "x-fh-ci-source" not in route.calls.last.request.headers

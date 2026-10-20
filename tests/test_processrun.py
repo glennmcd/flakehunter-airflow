@@ -41,7 +41,7 @@ def test_listed_size_over_limit_skips_download():
     with respx.mock(assert_all_called=False) as router:
         listed = router.get(ARTIFACTS_URL).mock(return_value=httpx.Response(200, json=listing))
         download = router.get(DOWNLOAD_URL).mock(return_value=httpx.Response(200, content=b""))
-        upload = router.post(f"{UPLOAD_BASE}/api/reports").mock(return_value=httpx.Response(201))
+        upload = router.post(f"{UPLOAD_BASE}/api/v2/reports").mock(return_value=httpx.Response(201))
 
         process_ghworkflowrun(RUN, "upload-token", UPLOAD_BASE, "dev_token")
 

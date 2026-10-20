@@ -3,7 +3,7 @@
 Run on purpose: `uv run python scripts/generate_client.py`.
 
 openapi-python-client refuses header parameters typed as date-time, which drops
-POST /api/reports entirely. The committed spec stays verbatim; this script strips
+POST /api/v2/reports entirely. The committed spec stays verbatim; this script strips
 `format: date-time` from header parameters in a temporary copy before generating. It also
 rejects the application/xml request body, so the copy declares it as a binary body instead;
 the wrapper in client.py sends the real Content-Type.

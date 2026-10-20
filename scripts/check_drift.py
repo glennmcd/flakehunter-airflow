@@ -1,7 +1,7 @@
 """Compare the pinned contract with FlakeHunter's latest published spec.
 
 Exit 0 when identical, 1 when they differ, 2 when the latest spec cannot be fetched.
-`uv run python scripts/check_drift.py [--url URL]`. Default is FlakeHunter's main branch.
+`uv run python scripts/check_drift.py [--url URL]`. Default is FlakeHunter's API v2 spec on main.
 """
 
 import argparse
@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-DEFAULT_URL = "https://raw.githubusercontent.com/glennmcd/flakehunter/main/docs/openapi.json"
+DEFAULT_URL = "https://raw.githubusercontent.com/glennmcd/flakehunter/main/docs/openapi.v2.json"
 PINNED = Path(__file__).resolve().parent.parent / "contract" / "openapi.json"
 
 

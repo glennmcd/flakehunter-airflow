@@ -3,7 +3,7 @@
 # lists github's run artifacts,  gets first expired
 # downloads artifact, size limited
 # extracts xml into suites
-# POST /api/reports data in headers?
+# POST /api/v2/reports data in headers?
 # NO: inserts summary into reports
 # NO: inserts suites
 # NO: updates fetched at with now() in db
