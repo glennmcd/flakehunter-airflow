@@ -168,11 +168,10 @@ def sync_detailed(
 
      Authenticated with a per-repository upload token (not the read token); the repository comes from the
     token. X-FH-CI-Source names the CI system that ran the tests and defaults to the host's own
-    (github_actions for GitHub), so an upload without it is the same run as a v1 upload. Idempotent on
-    (CI source, run id, attempt, report key): the first upload returns 201, a repeat returns 200 with
-    the original counts. A SHA that contradicts an existing run is a 400. Unparseable bodies or reports
-    with no testsuite are 422 (invalid_report) and store nothing. Rate limited per IP and per token (429
-    with Retry-After).
+    (github_actions for GitHub, gitlab_ci for GitLab). Idempotent on (CI source, run id, attempt, report
+    key): the first upload returns 201, a repeat returns 200 with the original counts. A SHA that
+    contradicts an existing run is a 400. Unparseable bodies or reports with no testsuite are 422
+    (invalid_report) and store nothing. Rate limited per IP and per token (429 with Retry-After).
 
     Args:
         x_fh_run_id (int):
@@ -241,11 +240,10 @@ def sync(
 
      Authenticated with a per-repository upload token (not the read token); the repository comes from the
     token. X-FH-CI-Source names the CI system that ran the tests and defaults to the host's own
-    (github_actions for GitHub), so an upload without it is the same run as a v1 upload. Idempotent on
-    (CI source, run id, attempt, report key): the first upload returns 201, a repeat returns 200 with
-    the original counts. A SHA that contradicts an existing run is a 400. Unparseable bodies or reports
-    with no testsuite are 422 (invalid_report) and store nothing. Rate limited per IP and per token (429
-    with Retry-After).
+    (github_actions for GitHub, gitlab_ci for GitLab). Idempotent on (CI source, run id, attempt, report
+    key): the first upload returns 201, a repeat returns 200 with the original counts. A SHA that
+    contradicts an existing run is a 400. Unparseable bodies or reports with no testsuite are 422
+    (invalid_report) and store nothing. Rate limited per IP and per token (429 with Retry-After).
 
     Args:
         x_fh_run_id (int):
@@ -308,11 +306,10 @@ async def asyncio_detailed(
 
      Authenticated with a per-repository upload token (not the read token); the repository comes from the
     token. X-FH-CI-Source names the CI system that ran the tests and defaults to the host's own
-    (github_actions for GitHub), so an upload without it is the same run as a v1 upload. Idempotent on
-    (CI source, run id, attempt, report key): the first upload returns 201, a repeat returns 200 with
-    the original counts. A SHA that contradicts an existing run is a 400. Unparseable bodies or reports
-    with no testsuite are 422 (invalid_report) and store nothing. Rate limited per IP and per token (429
-    with Retry-After).
+    (github_actions for GitHub, gitlab_ci for GitLab). Idempotent on (CI source, run id, attempt, report
+    key): the first upload returns 201, a repeat returns 200 with the original counts. A SHA that
+    contradicts an existing run is a 400. Unparseable bodies or reports with no testsuite are 422
+    (invalid_report) and store nothing. Rate limited per IP and per token (429 with Retry-After).
 
     Args:
         x_fh_run_id (int):
@@ -379,11 +376,10 @@ async def asyncio(
 
      Authenticated with a per-repository upload token (not the read token); the repository comes from the
     token. X-FH-CI-Source names the CI system that ran the tests and defaults to the host's own
-    (github_actions for GitHub), so an upload without it is the same run as a v1 upload. Idempotent on
-    (CI source, run id, attempt, report key): the first upload returns 201, a repeat returns 200 with
-    the original counts. A SHA that contradicts an existing run is a 400. Unparseable bodies or reports
-    with no testsuite are 422 (invalid_report) and store nothing. Rate limited per IP and per token (429
-    with Retry-After).
+    (github_actions for GitHub, gitlab_ci for GitLab). Idempotent on (CI source, run id, attempt, report
+    key): the first upload returns 201, a repeat returns 200 with the original counts. A SHA that
+    contradicts an existing run is a 400. Unparseable bodies or reports with no testsuite are 422
+    (invalid_report) and store nothing. Rate limited per IP and per token (429 with Retry-After).
 
     Args:
         x_fh_run_id (int):
