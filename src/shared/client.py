@@ -21,6 +21,7 @@ from shared._api.client import AuthenticatedClient
 from shared._api.models.post_api_v2_reports_content_encoding import (
     PostApiV2ReportsContentEncoding,
 )
+from shared._api.models.post_api_v2_reports_x_fh_ci_source import PostApiV2ReportsXFhCiSource
 from shared._api.types import UNSET, File
 from shared.limits import MAX_REPORT_BYTES
 
@@ -37,14 +38,15 @@ class UploadError(Exception):
 
 @dataclass(frozen=True)
 class RunHeaders:
-    """X-FH-* values, all taken from the GitHub workflow_run, never from Airflow."""
+    """X-FH-* values, all taken from the CI run, never from Airflow. Empty values are omitted."""
 
     run_id: int
     run_attempt: int
     sha: str
     branch: str
     workflow: str
-    timestamp: str  # RFC 3339, from workflow_run.run_started_at
+    timestamp: str  # RFC 3339, from the run's start time
+    ci_source: str | None = None  # None: FlakeHunter uses the repository host's default
 
 
 @dataclass(frozen=True)
@@ -89,6 +91,9 @@ def upload_report(
         x_fh_run_id=headers.run_id,
         x_fh_sha=headers.sha,
         x_fh_run_attempt=headers.run_attempt,
+        x_fh_ci_source=PostApiV2ReportsXFhCiSource(headers.ci_source)
+        if headers.ci_source
+        else UNSET,
         x_fh_branch=headers.branch or UNSET,
         x_fh_workflow=headers.workflow or UNSET,
         x_fh_report_key=REPORT_KEY,

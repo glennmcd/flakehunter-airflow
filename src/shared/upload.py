@@ -14,7 +14,8 @@ def upload_run_artifacts(
 ) -> UploadResult | None:
     """Extract the XML from every archive, merge it into one report and upload it for the run.
 
-    Returns None when an archive is rejected or the upload fails; both are logged.
+    Returns None when an archive is rejected, no archive holds XML, or the upload fails; all are
+    logged. An empty report is never uploaded: it would use up the run's upload key.
     """
     xml_data: dict[str, bytes] = {}
     try:
@@ -23,6 +24,9 @@ def upload_run_artifacts(
             if len(zips) > 1:  # keep same-named files from different archives apart
                 entries = {f"{index}/{name}": content for name, content in entries.items()}
             xml_data.update(entries)
+        if not xml_data:
+            logger.error(f"No XML files in the archives of run {run.run_id}; nothing uploaded")
+            return None
         suites_file_xml = merge_junit(xml_data)
     except ArtifactRejected as e:
         logger.error(f"Artifact rejected for run {run.run_id}: {e}")

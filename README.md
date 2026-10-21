@@ -2,7 +2,8 @@
 
 Airflow 3 pipeline for [FlakeHunter](https://github.com/glennmcd/flakehunter). The `flakehunter_ingest_github` DAG pulls
 JUnit XML artifacts from GitHub Actions runs and uploads them with `POST /api/v2/reports`. It catches runs the
-FlakeHunter webhook missed and backfills repositories added later. Uploads are idempotent, so running both paths
+FlakeHunter webhook missed and backfills repositories added later. The `flakehunter_ingest_gitlab` DAG does the same
+for GitLab CI pipelines, which have no webhook path. Uploads are idempotent, so running both paths
 never counts a run twice.
 
 The two repos form one system: FlakeHunter owns the API and the contract; this repo is a client of it.
@@ -15,11 +16,12 @@ The two repos form one system: FlakeHunter owns the API and the contract; this r
 
 ## Status
 
-The GitHub DAG (`dags/flakehunter_github_dag.py`) is in place. A GitLab DAG is planned in
-[`docs/plans/gitlab-ingest.md`](docs/plans/gitlab-ingest.md).
+The GitHub DAG (`dags/flakehunter_github_dag.py`) and the GitLab DAG (`dags/flakehunter_gitlab_dag.py`, design in
+[`docs/plans/gitlab-ingest.md`](docs/plans/gitlab-ingest.md)) are in place. The GitLab DAG has unit tests but no end-to-end
+run yet.
 
 Code lives in three packages under `src/`: `shared` (FlakeHunter client, archive and JUnit handling, upload),
-`flakehunter_ingest_github`, and later `flakehunter_ingest_gitlab`. `shared` imports neither CI package, and the CI
+`flakehunter_ingest_github` and `flakehunter_ingest_gitlab`. `shared` imports neither CI package, and the CI
 packages never import each other; `tests/test_layout.py` checks this.
 
 ## Develop
@@ -54,6 +56,11 @@ Secrets live in Airflow only.
 | `flakehunter_repos` | Variable (JSON) | list of `owner/repo` |
 | `github_default` | Connection | GitHub token with `actions:read` |
 | `flakehunter_upload_<owner>_<repo>` | HTTP Connection | host = FlakeHunter URL, password = that repository's upload token |
+| `flakehunter_gitlab_projects` | Variable (JSON) | list of numeric GitLab project ids |
+| `gitlab_default` | Connection | host = GitLab base URL with scheme (e.g. `https://gitlab.com`), password = token with `read_api` |
+| `flakehunter_upload_gitlab_<project_id>` | HTTP Connection | host = FlakeHunter URL, password = that project's upload token |
+
+GitLab jobs must publish their JUnit files under `artifacts:paths`; the DAG reads each job's artifacts archive.
 
 ## License
 

@@ -2,6 +2,7 @@ import gzip
 import io
 import xml.etree.ElementTree as ET
 import zipfile
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import httpx
@@ -40,6 +41,22 @@ def test_headers_come_from_the_run():
     assert (headers.run_id, headers.run_attempt, headers.sha) == (7, 2, "b" * 40)
     assert (headers.branch, headers.workflow) == ("main", "CI")
     assert headers.timestamp == "2026-10-01T12:00:00+00:00"
+    assert headers.ci_source is None
+
+
+def test_ci_source_and_missing_start_time():
+    headers = replace(RUN, started_at=None, ci_source="gitlab_ci").headers()
+    assert (headers.timestamp, headers.ci_source) == ("", "gitlab_ci")
+
+
+@respx.mock
+def test_ci_source_is_sent_when_set():
+    route = respx.post(UPLOAD_URL).mock(return_value=httpx.Response(201))
+    run = replace(RUN, ci_source="gitlab_ci")
+
+    upload_run_artifacts(run, [make_zip({"a.xml": suite("a")})], UPLOAD_BASE, "token")
+
+    assert route.calls.last.request.headers["x-fh-ci-source"] == "gitlab_ci"
 
 
 @respx.mock
@@ -67,6 +84,17 @@ def test_same_named_files_from_several_archives_are_all_merged():
 
     merged = ET.fromstring(gzip.decompress(route.calls.last.request.content))
     assert [s.get("name") for s in merged.findall("testsuite")] == ["first", "second"]
+
+
+@respx.mock
+def test_archives_without_xml_are_not_uploaded():
+    route = respx.post(UPLOAD_URL).mock(return_value=httpx.Response(201))
+    zips = [make_zip({"node_modules/a/package.json": "{}"}), make_zip({})]
+
+    result = upload_run_artifacts(RUN, zips, UPLOAD_BASE, "token")
+
+    assert result is None
+    assert not route.called
 
 
 @respx.mock

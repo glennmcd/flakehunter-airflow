@@ -1,0 +1,297 @@
+[
+  {
+    "id": 17337467318,
+    "status": "success",
+    "stage": "test",
+    "name": "run-tests",
+    "ref": "main",
+    "tag": false,
+    "coverage": null,
+    "allow_failure": false,
+    "created_at": "2026-10-21T05:28:20.534Z",
+    "started_at": "2026-10-21T05:28:20.860Z",
+    "finished_at": "2026-10-21T05:28:36.212Z",
+    "erased_at": null,
+    "duration": 15.351474,
+    "queued_duration": 0.106722,
+    "user": {
+      "id": 43528829,
+      "username": "g26work",
+      "public_email": null,
+      "name": "Glenn McDonald",
+      "state": "active",
+      "locked": false,
+      "avatar_url": "https://secure.gravatar.com/avatar/999930ad444d4e28f5bd19a46f49545184a58a20b0b2f33beee6b2c593a88ba9?s=80&d=identicon",
+      "web_url": "https://gitlab.com/g26work",
+      "created_at": "2026-10-19T19:27:35.335Z",
+      "bio": "",
+      "location": "",
+      "linkedin": "",
+      "twitter": "",
+      "discord": "",
+      "website_url": "",
+      "github": "",
+      "job_title": "",
+      "pronouns": null,
+      "organization": "",
+      "bot": false,
+      "work_information": null,
+      "followers": 0,
+      "following": 0,
+      "local_time": null
+    },
+    "commit": {
+      "id": "8d1995846c870962f166ece0ce9c7c9df8472a99",
+      "short_id": "8d199584",
+      "created_at": "2026-10-20T22:14:23.000-07:00",
+      "parent_ids": [
+        "9f6cb30c0ded6fabfff1b26cdd902462d134ddc7"
+      ],
+      "title": "ci: removed node_modules",
+      "message": "ci: removed node_modules\n",
+      "author_name": "glenn",
+      "author_email": "2763797+glennmcd@users.noreply.github.com",
+      "authored_date": "2026-10-20T22:14:23.000-07:00",
+      "committer_name": "glenn",
+      "committer_email": "2763797+glennmcd@users.noreply.github.com",
+      "committed_date": "2026-10-20T22:14:23.000-07:00",
+      "trailers": {},
+      "extended_trailers": {},
+      "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/commit/8d1995846c870962f166ece0ce9c7c9df8472a99"
+    },
+    "pipeline": {
+      "id": 2970449207,
+      "iid": 7,
+      "project_id": 87833569,
+      "sha": "8d1995846c870962f166ece0ce9c7c9df8472a99",
+      "ref": "main",
+      "status": "success",
+      "source": "push",
+      "created_at": "2026-10-21T05:14:33.939Z",
+      "updated_at": "2026-10-21T05:28:37.723Z",
+      "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2970449207"
+    },
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/jobs/17337467318",
+    "project": {
+      "ci_job_token_scope_enabled": false
+    },
+    "artifacts_file": {
+      "filename": "artifacts.zip",
+      "size": 701
+    },
+    "artifacts": [
+      {
+        "file_type": "archive",
+        "size": 701,
+        "filename": "artifacts.zip",
+        "file_format": "zip"
+      },
+      {
+        "file_type": "metadata",
+        "size": 169,
+        "filename": "metadata.gz",
+        "file_format": "gzip"
+      },
+      {
+        "file_type": "trace",
+        "size": 10985,
+        "filename": "job.log",
+        "file_format": null
+      },
+      {
+        "file_type": "junit",
+        "size": 565,
+        "filename": "junit.xml.gz",
+        "file_format": "gzip"
+      }
+    ],
+    "runner": {
+      "id": 54907241,
+      "description": "k8s.saas-linux-small-amd64.runners-manager.gitlab.com/default ",
+      "ip_address": null,
+      "active": true,
+      "paused": false,
+      "is_shared": true,
+      "runner_type": "instance_type",
+      "name": null,
+      "online": true,
+      "created_by": {
+        "id": 6515150,
+        "username": "rhassanein-admin",
+        "public_email": "",
+        "name": "Rehab Hassanein",
+        "state": "active",
+        "locked": false,
+        "avatar_url": "https://secure.gravatar.com/avatar/f666d7b03304319b77d3e0eef49a7ea0f3f97f813536109786338b6468d7d34f?s=80&d=identicon",
+        "web_url": "https://gitlab.com/rhassanein-admin"
+      },
+      "created_at": "2026-08-06T11:12:30.404Z",
+      "status": "online",
+      "job_execution_status": "active"
+    },
+    "runner_manager": {
+      "id": 164021265,
+      "system_id": "r_INDUsOQQbAum",
+      "version": "19.6.0~pre.2348.g4d083417",
+      "revision": "4d083417",
+      "platform": "linux",
+      "architecture": "amd64",
+      "created_at": "2026-10-20T15:26:56.983Z",
+      "contacted_at": "2026-10-21T05:34:05.126Z",
+      "ip_address": "10.218.11.3",
+      "status": "online",
+      "job_execution_status": "active"
+    },
+    "artifacts_expire_at": "2026-11-20T05:28:35.127Z",
+    "archived": false,
+    "tag_list": []
+  },
+  {
+    "id": 17337304530,
+    "status": "failed",
+    "stage": "test",
+    "name": "run-tests",
+    "ref": "main",
+    "tag": false,
+    "coverage": null,
+    "allow_failure": false,
+    "created_at": "2026-10-21T05:14:34.050Z",
+    "started_at": "2026-10-21T05:14:34.402Z",
+    "finished_at": "2026-10-21T05:14:48.125Z",
+    "erased_at": null,
+    "duration": 13.722948,
+    "queued_duration": 0.070109,
+    "user": {
+      "id": 43528829,
+      "username": "g26work",
+      "public_email": null,
+      "name": "Glenn McDonald",
+      "state": "active",
+      "locked": false,
+      "avatar_url": "https://secure.gravatar.com/avatar/999930ad444d4e28f5bd19a46f49545184a58a20b0b2f33beee6b2c593a88ba9?s=80&d=identicon",
+      "web_url": "https://gitlab.com/g26work",
+      "created_at": "2026-10-19T19:27:35.335Z",
+      "bio": "",
+      "location": "",
+      "linkedin": "",
+      "twitter": "",
+      "discord": "",
+      "website_url": "",
+      "github": "",
+      "job_title": "",
+      "pronouns": null,
+      "organization": "",
+      "bot": false,
+      "work_information": null,
+      "followers": 0,
+      "following": 0,
+      "local_time": null
+    },
+    "commit": {
+      "id": "8d1995846c870962f166ece0ce9c7c9df8472a99",
+      "short_id": "8d199584",
+      "created_at": "2026-10-20T22:14:23.000-07:00",
+      "parent_ids": [
+        "9f6cb30c0ded6fabfff1b26cdd902462d134ddc7"
+      ],
+      "title": "ci: removed node_modules",
+      "message": "ci: removed node_modules\n",
+      "author_name": "glenn",
+      "author_email": "2763797+glennmcd@users.noreply.github.com",
+      "authored_date": "2026-10-20T22:14:23.000-07:00",
+      "committer_name": "glenn",
+      "committer_email": "2763797+glennmcd@users.noreply.github.com",
+      "committed_date": "2026-10-20T22:14:23.000-07:00",
+      "trailers": {},
+      "extended_trailers": {},
+      "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/commit/8d1995846c870962f166ece0ce9c7c9df8472a99"
+    },
+    "pipeline": {
+      "id": 2970449207,
+      "iid": 7,
+      "project_id": 87833569,
+      "sha": "8d1995846c870962f166ece0ce9c7c9df8472a99",
+      "ref": "main",
+      "status": "success",
+      "source": "push",
+      "created_at": "2026-10-21T05:14:33.939Z",
+      "updated_at": "2026-10-21T05:28:37.723Z",
+      "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2970449207"
+    },
+    "failure_reason": "script_failure",
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/jobs/17337304530",
+    "project": {
+      "ci_job_token_scope_enabled": false
+    },
+    "artifacts_file": {
+      "filename": "artifacts.zip",
+      "size": 844
+    },
+    "artifacts": [
+      {
+        "file_type": "archive",
+        "size": 844,
+        "filename": "artifacts.zip",
+        "file_format": "zip"
+      },
+      {
+        "file_type": "metadata",
+        "size": 169,
+        "filename": "metadata.gz",
+        "file_format": "gzip"
+      },
+      {
+        "file_type": "trace",
+        "size": 11016,
+        "filename": "job.log",
+        "file_format": null
+      },
+      {
+        "file_type": "junit",
+        "size": 708,
+        "filename": "junit.xml.gz",
+        "file_format": "gzip"
+      }
+    ],
+    "runner": {
+      "id": 54907241,
+      "description": "k8s.saas-linux-small-amd64.runners-manager.gitlab.com/default ",
+      "ip_address": null,
+      "active": true,
+      "paused": false,
+      "is_shared": true,
+      "runner_type": "instance_type",
+      "name": null,
+      "online": true,
+      "created_by": {
+        "id": 6515150,
+        "username": "rhassanein-admin",
+        "public_email": "",
+        "name": "Rehab Hassanein",
+        "state": "active",
+        "locked": false,
+        "avatar_url": "https://secure.gravatar.com/avatar/f666d7b03304319b77d3e0eef49a7ea0f3f97f813536109786338b6468d7d34f?s=80&d=identicon",
+        "web_url": "https://gitlab.com/rhassanein-admin"
+      },
+      "created_at": "2026-08-06T11:12:30.404Z",
+      "status": "online",
+      "job_execution_status": "active"
+    },
+    "runner_manager": {
+      "id": 164021642,
+      "system_id": "r_SFYe3IrvFkFG",
+      "version": "19.6.0~pre.2348.g4d083417",
+      "revision": "4d083417",
+      "platform": "linux",
+      "architecture": "amd64",
+      "created_at": "2026-10-20T15:29:30.599Z",
+      "contacted_at": "2026-10-21T05:34:05.243Z",
+      "ip_address": "10.218.11.3",
+      "status": "online",
+      "job_execution_status": "active"
+    },
+    "artifacts_expire_at": "2026-11-20T05:14:47.105Z",
+    "archived": false,
+    "tag_list": []
+  }
+]

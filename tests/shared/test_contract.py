@@ -2,10 +2,11 @@
 
 import json
 import re
-from dataclasses import fields
+from dataclasses import fields, replace
 from pathlib import Path
 
 import httpx
+import pytest
 import respx
 
 from shared.client import REPORT_KEY, RunHeaders, upload_report
@@ -21,12 +22,16 @@ def test_pinned_version():
     assert SPEC["info"]["version"] == "2.1.0"
 
 
+GITLAB = {"ci_source": "gitlab_ci", "workflow": "", "timestamp": ""}
+
+
 @respx.mock
-def test_sent_headers_are_declared_and_valid(client, headers):
+@pytest.mark.parametrize("overrides", [{}, GITLAB], ids=["github", "gitlab"])
+def test_sent_headers_are_declared_and_valid(client, headers, overrides):
     route = respx.post(f"{BASE}/api/v2/reports").mock(
         return_value=httpx.Response(201, json={"run": {}, "duplicate": False, "counts": {}})
     )
-    upload_report(client, b"<testsuite/>", headers)
+    upload_report(client, b"<testsuite/>", replace(headers, **overrides))
     sent = {
         k: v
         for k, v in route.calls.last.request.headers.items()
@@ -62,6 +67,7 @@ def test_run_headers_cover_the_documented_set():
         "branch",
         "workflow",
         "timestamp",
+        "ci_source",
     }
 
 
@@ -78,3 +84,7 @@ def test_ci_source_is_left_to_the_github_default(client, headers):
     )
     upload_report(client, b"<testsuite/>", headers)
     assert "x-fh-ci-source" not in route.calls.last.request.headers
+
+
+def test_ci_sources_sent_are_in_the_pinned_enum():
+    assert {"github_actions", "gitlab_ci"} <= set(PARAMS["x-fh-ci-source"]["schema"]["enum"])

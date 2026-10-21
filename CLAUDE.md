@@ -1,7 +1,8 @@
 # flakehunter-airflow
 
-Airflow 3 DAGs that pull JUnit XML from GitHub Actions and upload it to
-[FlakeHunter](https://github.com/glennmcd/flakehunter). Design: `docs/plans/flakehunter-ingest.md`.
+Airflow 3 DAGs that pull JUnit XML from GitHub Actions and GitLab CI and upload it to
+[FlakeHunter](https://github.com/glennmcd/flakehunter). Design: `docs/plans/flakehunter-ingest.md`,
+`docs/plans/gitlab-ingest.md`.
 
 This repo is separate from FlakeHunter. FlakeHunter's `CLAUDE.md`, `/new-endpoint` skill and agents do not
 apply here.
@@ -41,10 +42,12 @@ from `.venv` unless given `--inexact` / `--no-sync`.
   Use `client.py` (the wrapper) for everything the generator cannot express.
 - The spec is pinned and changed on purpose: re-pin, regenerate, update the wrapper and tests in one commit.
   The weekly `contract-drift` workflow opens an issue when FlakeHunter's spec moves.
-- **Idempotency:** every `X-FH-*` value comes from the GitHub `workflow_run`. Never use `dag_run.run_id`, the
-  logical date or the try number in a header. Report key is always `webhook-artifact`.
+- **Idempotency:** every `X-FH-*` value comes from the CI run (GitHub `workflow_run`, GitLab pipeline and its
+  jobs) or is a constant. Never use `dag_run.run_id`, the logical date or the try number in a header. Report key
+  is always `webhook-artifact`. GitLab uploads always send `X-FH-CI-Source: gitlab_ci`; GitHub uploads send none.
 - **Secrets:** only through Airflow Connections and Variables (`github_default`,
-  `flakehunter_upload_<owner>_<repo>`, `flakehunter_repos`). Never in code, DAG files, logs, XCom or committed
-  config. Do not print tokens or full request headers.
+  `flakehunter_upload_<owner>_<repo>`, `flakehunter_repos`, `gitlab_default`,
+  `flakehunter_upload_gitlab_<project_id>`, `flakehunter_gitlab_projects`). Never in code, DAG files, logs, XCom or
+  committed config. Do not print tokens or full request headers.
 - DAG tests use pytest with `respx` mocks. No network in unit tests.
 - Conventional Commits. Work directly on `main`.

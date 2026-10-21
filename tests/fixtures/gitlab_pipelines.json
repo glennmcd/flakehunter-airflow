@@ -1,0 +1,93 @@
+[
+  {
+    "id": 2970449207,
+    "iid": 7,
+    "project_id": 87833569,
+    "sha": "8d1995846c870962f166ece0ce9c7c9df8472a99",
+    "ref": "main",
+    "status": "success",
+    "source": "push",
+    "created_at": "2026-10-21T05:14:33.939Z",
+    "updated_at": "2026-10-21T05:28:37.723Z",
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2970449207",
+    "name": null
+  },
+  {
+    "id": 2970420645,
+    "iid": 6,
+    "project_id": 87833569,
+    "sha": "9f6cb30c0ded6fabfff1b26cdd902462d134ddc7",
+    "ref": "main",
+    "status": "failed",
+    "source": "push",
+    "created_at": "2026-10-21T05:03:31.136Z",
+    "updated_at": "2026-10-21T05:03:31.136Z",
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2970420645",
+    "name": null
+  },
+  {
+    "id": 2970416367,
+    "iid": 5,
+    "project_id": 87833569,
+    "sha": "e69777a97bacbb6f90fbbb0ad3a70b2b06a2d47d",
+    "ref": "main",
+    "status": "success",
+    "source": "push",
+    "created_at": "2026-10-21T05:01:32.886Z",
+    "updated_at": "2026-10-21T05:02:09.757Z",
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2970416367",
+    "name": null
+  },
+  {
+    "id": 2964888930,
+    "iid": 4,
+    "project_id": 87833569,
+    "sha": "178638ffe7b679fd7682443037965bcc7d50db69",
+    "ref": "main",
+    "status": "failed",
+    "source": "push",
+    "created_at": "2026-10-19T20:17:26.375Z",
+    "updated_at": "2026-10-19T20:18:01.761Z",
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2964888930",
+    "name": null
+  },
+  {
+    "id": 2964856591,
+    "iid": 3,
+    "project_id": 87833569,
+    "sha": "a9345cf9c392cbeec9e352c2ae083777f25fec1b",
+    "ref": "main",
+    "status": "failed",
+    "source": "push",
+    "created_at": "2026-10-19T20:08:14.142Z",
+    "updated_at": "2026-10-19T20:09:20.717Z",
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2964856591",
+    "name": null
+  },
+  {
+    "id": 2964838449,
+    "iid": 2,
+    "project_id": 87833569,
+    "sha": "984f73fb755f8760f4886a7ce8c13c58fd910550",
+    "ref": "main",
+    "status": "failed",
+    "source": "web",
+    "created_at": "2026-10-19T20:04:32.262Z",
+    "updated_at": "2026-10-19T20:05:17.041Z",
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2964838449",
+    "name": null
+  },
+  {
+    "id": 2964815162,
+    "iid": 1,
+    "project_id": 87833569,
+    "sha": "984f73fb755f8760f4886a7ce8c13c58fd910550",
+    "ref": "main",
+    "status": "failed",
+    "source": "push",
+    "created_at": "2026-10-19T19:57:00.242Z",
+    "updated_at": "2026-10-19T19:57:00.242Z",
+    "web_url": "https://gitlab.com/g26work-group/flakehunter-test-gitlab/-/pipelines/2964815162",
+    "name": null
+  }
+]

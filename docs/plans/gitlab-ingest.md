@@ -1,6 +1,8 @@
 # GitLab ingest
 
-**Status:** Agreed. Step 1 (restructure) is done; steps 2 and 3 wait for a FlakeHunter release with `gitlab_ci`.
+**Status:** Implemented against FlakeHunter `v0.5.0` (spec 2.1.0), with unit tests; the end-to-end run in
+[Validation](#validation) is still to do. Where the code settled details this brief left open, see
+[Implementation notes](#implementation-notes).
 
 This brief extends the ingest to GitLab CI. A second DAG lists finished GitLab pipelines, collects the JUnit XML from
 their jobs and uploads it through FlakeHunter's `POST /api/v2/reports`. The code is split into three packages: one per
@@ -228,10 +230,37 @@ Three commits, in this order. The first two change no behaviour.
   the pipeline id. Retry one job, run again and expect one new `201` with `run.attempt: 2` on the same SHA. The run
   appears in `GET /api/v2/tests/{id}/history`, and `GET /api/v2/repos` lists the project with `host: "gitlab"`.
 
+## Implementation notes
+
+- **Attempt:** one `include_retried=true` job listing gives both numbers. Job names are unique in a pipeline and a
+  retry adds a job of the same name, so the current jobs are the highest id per name and the attempt is
+  `1 + all jobs − current jobs`. This needs no `retried` flag in the job payload.
+- **Pipeline running again:** `upload_pipeline` re-reads the pipeline. If it is no longer terminal, or a current job
+  is not in a finished state (`success`, `failed`, `canceled`, `skipped`, `manual`), it uploads nothing and the
+  pipeline is picked up by a later run with the new attempt.
+- **Per-job archives:** a job archive over 10 MiB (listed or streamed), rejected, or failing to download is left
+  out and logged; the other jobs' XML is still uploaded. A pipeline with no archives uploads nothing.
+- **No XML, no upload:** when the downloaded archives hold no `.xml` file, `shared/upload.py` uploads nothing
+  and logs it, for both DAGs. Before, an empty `<testsuites>` was uploaded and used up the run's upload key, so
+  the run could not be uploaded again once its CI config was fixed. Seen on the test project
+  (`g26work-group/flakehunter-test-gitlab`, project id `87833569`): its test job had JUnit only under
+  `reports:junit`, and the pipeline's one archive held `node_modules`.
+- **Merge request refs:** only `refs/merge-requests/<iid>/head` yields an iid. Merged-results pipelines
+  (`…/merge`) therefore fail the trust check and are skipped, which answers open question 2 conservatively for now.
+  A 404 for the merge request also counts as untrusted.
+- **Branch:** `X-FH-Branch` is `pipeline.ref` as planned, so merge request pipelines record
+  `refs/merge-requests/<iid>/head`, not the source branch.
+- **Lookback:** `updated_after` is now minus 7 days (`LOOKBACK` in the DAG file). It only bounds discovery and is
+  never sent. Like the GitHub DAG, the DAG has `schedule=None` and sets no pool.
+- **Auth:** the GitLab token is sent as `Authorization: Bearer`, not `PRIVATE-TOKEN`, so httpx drops it if an
+  artifact download redirects to another host.
+- **Fixtures:** the unit tests use small hand-written payloads. `scripts/get_gitlab_fixture.py` records real ones.
+
 ## Open questions
 
-1. Can JUnit files declared only under `artifacts:reports:junit` be downloaded through the jobs API? If yes, the
-   "also list them under `artifacts:paths`" requirement goes away.
+1. ~~Can JUnit files declared only under `artifacts:reports:junit` be downloaded through the jobs API?~~
+   Answered: no. A reports-only job lists a `junit` artifact but no `archive`, and the jobs API downloads only the
+   archive. JUnit files must also be under `artifacts:paths`, with `when: always` so failing jobs keep them.
 2. Merged-results pipelines test a merge commit, so `pipeline.sha` is not a commit on the branch. Should those
    pipelines be uploaded, skipped, or tagged by branch?
 3. Child pipelines (`parent_pipeline` source) often hold the test jobs in monorepos. Are they needed in the first

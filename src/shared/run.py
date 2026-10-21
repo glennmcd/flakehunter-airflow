@@ -12,8 +12,9 @@ class CiRun:
     run_attempt: int
     sha: str
     branch: str
-    workflow: str
-    started_at: datetime
+    workflow: str  # empty: X-FH-Workflow is omitted
+    started_at: datetime | None  # None: X-FH-Timestamp is omitted
+    ci_source: str | None = None  # None: X-FH-CI-Source is omitted
 
     def headers(self) -> RunHeaders:
         return RunHeaders(
@@ -22,5 +23,6 @@ class CiRun:
             self.sha,
             self.branch,
             self.workflow,
-            self.started_at.isoformat(),
+            self.started_at.isoformat() if self.started_at else "",
+            self.ci_source,
         )
