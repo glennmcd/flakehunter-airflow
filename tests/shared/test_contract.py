@@ -18,7 +18,7 @@ PARAMS = {p["name"]: p for p in OP["parameters"] if p["in"] == "header"}
 
 
 def test_pinned_version():
-    assert SPEC["info"]["version"] == "2.0.0"
+    assert SPEC["info"]["version"] == "2.1.0"
 
 
 @respx.mock
