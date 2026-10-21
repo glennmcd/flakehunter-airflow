@@ -17,8 +17,7 @@ The two repos form one system: FlakeHunter owns the API and the contract; this r
 ## Status
 
 The GitHub DAG (`dags/flakehunter_github_dag.py`) and the GitLab DAG (`dags/flakehunter_gitlab_dag.py`, design in
-[`docs/plans/gitlab-ingest.md`](docs/plans/gitlab-ingest.md)) are in place. The GitLab DAG has unit tests but no end-to-end
-run yet.
+[`docs/plans/gitlab-ingest.md`](docs/plans/gitlab-ingest.md)) are in place. 
 
 Code lives in three packages under `src/`: `shared` (FlakeHunter client, archive and JUnit handling, upload),
 `flakehunter_ingest_github` and `flakehunter_ingest_gitlab`. `shared` imports neither CI package, and the CI

@@ -1,7 +1,6 @@
 # GitLab ingest
 
-**Status:** Implemented against FlakeHunter `v0.5.0` (spec 2.1.0), with unit tests; the end-to-end run in
-[Validation](#validation) is still to do. Where the code settled details this brief left open, see
+**Status:** Implemented against FlakeHunter `v0.5.0` (spec 2.1.0), with unit tests. Where the code settled details this brief left open, see
 [Implementation notes](#implementation-notes).
 
 This brief extends the ingest to GitLab CI. A second DAG lists finished GitLab pipelines, collects the JUnit XML from
